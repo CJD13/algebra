@@ -1,6 +1,7 @@
 use std::cmp::Ordering;
 use std::ops::{Mul, Add};
 use std::marker::PhantomData;
+mod test;
 pub trait FiniteSet:Set+IntoIterator {
     const ORDER: u64;
     //A struct implementing FiniteSet must have ORDER equal to the number of objects of that struct.
@@ -48,31 +49,34 @@ pub trait Group<Operation:O2<Self>>:Monoid<Operation>{
         Operation::F(self,other)
     }
 }
-pub trait Ring<PLUS:O2<Self>,TIMES:O2<Self>>:Group<PLUS>+Monoid<TIMES>{
+pub trait RingOperations<T> where Self::PLUS:O2<T>,Self::TIMES:O2<T>{
+    type PLUS;
+    type TIMES;
+}
+pub trait Ring<O>:Group<O::PLUS>+Monoid<O::TIMES> where O:RingOperations<Self> {
     //Any implementation must guarantee that TIMES distributes over PLUS
     fn zero()->Self {
-        <Self as Group<PLUS>>::identity()
+        <Self as Group<O::PLUS>>::identity()
     }
     fn one()->Self {
-        <Self as Monoid<TIMES>>::identity()
+        <Self as Monoid<O::TIMES>>::identity()
     }
     fn negated(self)->Self {
-        <Self as Group<PLUS>>::inverse(self)
+        <Self as Group<O::PLUS>>::inverse(self)
     }
     fn plus(self, other:Self) -> Self {
-        PLUS::F(self,other)
+        O::PLUS::F(self,other)
     }
     fn times(self, other:Self) -> Self {
-        TIMES::F(self,other)
+        O::TIMES::F(self,other)
     }
     fn times_integer(self, other:i64) -> Self {
         Ring::times(self,Group::pow(Self::one(),other))
     }
 }
-struct Polynomial<R,PLUS:O2<R>,TIMES:O2<R>> where R:Ring<PLUS,TIMES> {
+struct Polynomial<R,O:RingOperations<R>> where R:Ring<O> {
     data:Vec<R>,
-    p:PhantomData<PLUS>,
-    t:PhantomData<TIMES>
+    o:PhantomData<O>
 }
 #[derive(PartialEq,PartialOrd,Eq,Ord)]
 pub enum Degree {
@@ -113,7 +117,7 @@ impl Add<Degree> for Degree {
         }
     }
 }
-impl<R,PLUS:O2<R>,TIMES:O2<R>> Polynomial<R,PLUS,TIMES> where R:Ring<PLUS,TIMES>{
+impl<R,O> Polynomial<R,O> where O:RingOperations<R>,R:Ring<O>{
     fn trim_zeros(mut v:Vec<R>)->Vec<R> {
         if v.len()>0 {
             let mut k=v.pop().unwrap();
@@ -127,9 +131,9 @@ impl<R,PLUS:O2<R>,TIMES:O2<R>> Polynomial<R,PLUS,TIMES> where R:Ring<PLUS,TIMES>
         v
     }
     fn zero()->Self {
-        Polynomial {data:vec![],p:PhantomData,t:PhantomData}}
+        Polynomial {data:vec![],o:PhantomData}}
     fn one()->Self {
-        Polynomial {data:vec![<R as Monoid<TIMES>>::identity()],p:PhantomData,t:PhantomData}}
+        Polynomial {data:vec![<R as Monoid<O::TIMES>>::identity()],o:PhantomData}}
     fn degree(&self) -> Degree {
         if self.data.len()==0 {Degree::NegInfty} else {Degree::Integer(self.data.len()-1)}
     }
@@ -145,11 +149,11 @@ impl<R,PLUS:O2<R>,TIMES:O2<R>> Polynomial<R,PLUS,TIMES> where R:Ring<PLUS,TIMES>
         let mut data=vec![];
         let mut n = 0;
         while l>=n{
-            data.push(PLUS::F(self.coefficient(n),other.coefficient(n)));
+            data.push(Ring::plus(self.coefficient(n),other.coefficient(n)));
             n+=1;
         }
         data=Self::trim_zeros(data);
-        Polynomial {data:data,p:PhantomData,t:PhantomData}
+        Polynomial {data:data,o:PhantomData}
     }
     fn mul(self, other:Self) ->Self{
         let l = self.degree()+other.degree();
@@ -158,13 +162,13 @@ impl<R,PLUS:O2<R>,TIMES:O2<R>> Polynomial<R,PLUS,TIMES> where R:Ring<PLUS,TIMES>
         while l>=i {
             let mut s=R::zero();
             for j in 0..=i {
-                s=PLUS::F(s,TIMES::F(self.coefficient(j),other.coefficient(i-j)));
+                s=Ring::plus(s,Ring::times(self.coefficient(j),other.coefficient(i-j)));
             }
             res.push(s);
             i+=1;
         }
         res=Self::trim_zeros(res);
-        Polynomial {data:res,p:PhantomData,t:PhantomData}
+        Polynomial {data:res,o:PhantomData}
     }
     
     fn negated(self) -> Self {
@@ -172,70 +176,76 @@ impl<R,PLUS:O2<R>,TIMES:O2<R>> Polynomial<R,PLUS,TIMES> where R:Ring<PLUS,TIMES>
         for i in 0..self.data.len() {
             res.push(self.data[i].clone().negated());
         }
-        Polynomial {data:res, p:PhantomData, t:PhantomData}
+        Polynomial {data:res, o:PhantomData}
     }
     //fn derivative(self)->Self {
         //self
     //}
 }
-impl<R,PLUS:O2<R>,TIMES:O2<R>> Add<Polynomial<R,PLUS,TIMES>> for Polynomial<R,PLUS,TIMES> where R:Ring<PLUS,TIMES> {
+impl<R,O> Add<Polynomial<R,O>> for Polynomial<R,O> where O:RingOperations<R>,R:Ring<O> {
     type Output=Self;
-    fn add(self, rhs: Polynomial<R,PLUS,TIMES>) -> Self::Output {
+    fn add(self, rhs: Self) -> Self::Output {
         self.add(rhs)
     }
 }
-impl<R,PLUS:O2<R>,TIMES:O2<R>> Mul<Polynomial<R,PLUS,TIMES>> for Polynomial<R,PLUS,TIMES> where R:Ring<PLUS,TIMES> {
+impl<R,O> Mul<Polynomial<R,O>> for Polynomial<R,O> where O:RingOperations<R>,R:Ring<O> {
     type Output=Self;
-    fn mul(self, rhs: Polynomial<R,PLUS,TIMES>) -> Self::Output {
+    fn mul(self, rhs: Polynomial<R,O>) -> Self::Output {
         self.mul(rhs)
     }
 }
-struct PPLUS<R,PLUS:O2<R>,TIMES:O2<R>> where R:Ring<PLUS,TIMES> {
+struct PPLUS<R,O> where O:RingOperations<R>,R:Ring<O> {
     r:PhantomData<R>,
-    p:PhantomData<PLUS>,
-    t:PhantomData<TIMES>
+    o:PhantomData<O>,
 }
-struct PTIMES<R,PLUS:O2<R>,TIMES:O2<R>> where R:Ring<PLUS,TIMES> {
+struct PTIMES<R,O> where O:RingOperations<R>,R:Ring<O> {
     r:PhantomData<R>,
-    p:PhantomData<PLUS>,
-    t:PhantomData<TIMES>
+    p:PhantomData<O>,
 }
-impl<R,PLUS:O2<R>,TIMES:O2<R>> O2<Polynomial<R,PLUS,TIMES>> for PPLUS<R,PLUS,TIMES> where R:Ring<PLUS,TIMES>{
-    const F: fn(Polynomial<R,PLUS,TIMES>,Polynomial<R,PLUS,TIMES>)->Polynomial<R,PLUS,TIMES> = <Polynomial<R,PLUS,TIMES>>::add;
+impl<R,O> O2<Polynomial<R,O>> for PPLUS<R,O> where O:RingOperations<R>,R:Ring<O>{
+    const F: fn(Polynomial<R,O>,Polynomial<R,O>)->Polynomial<R,O> = <Polynomial<R,O>>::add;
 }
-impl<R,PLUS:O2<R>,TIMES:O2<R>> O2<Polynomial<R,PLUS,TIMES>> for PTIMES<R,PLUS,TIMES> where R:Ring<PLUS,TIMES>{
-    const F: fn(Polynomial<R,PLUS,TIMES>,Polynomial<R,PLUS,TIMES>)->Polynomial<R,PLUS,TIMES> = <Polynomial<R,PLUS,TIMES>>::mul;
+impl<R,O> O2<Polynomial<R,O>> for PTIMES<R,O> where O:RingOperations<R>,R:Ring<O>{
+    const F: fn(Polynomial<R,O>,Polynomial<R,O>)->Polynomial<R,O> = <Polynomial<R,O>>::mul;
 }
 
-impl<R,PLUS:O2<R>,TIMES:O2<R>> PartialEq for Polynomial<R,PLUS,TIMES> where R:Ring<PLUS,TIMES> {
+impl<R,O> PartialEq for Polynomial<R,O> where O:RingOperations<R>,R:Ring<O> {
     fn eq(&self, other: &Self)->bool {
         return self.data==other.data
     }
 }
-impl<R,PLUS:O2<R>,TIMES:O2<R>> Clone for Polynomial<R,PLUS,TIMES> where R:Ring<PLUS,TIMES> {
+impl<R,O> Clone for Polynomial<R,O> where O:RingOperations<R>,R:Ring<O> {
     fn clone(&self) -> Self {
-        Polynomial {data:self.data.clone(),p:PhantomData,t:PhantomData}
+        Polynomial {data:self.data.clone(),o:PhantomData}
     }
 }
-impl<R,PLUS:O2<R>,TIMES:O2<R>> Set for Polynomial<R,PLUS,TIMES> where R:Ring<PLUS,TIMES> {
+impl<R,O> Set for Polynomial<R,O> where O:RingOperations<R>,R:Ring<O> {
 
 }
-impl<R,PLUS:O2<R>,TIMES:O2<R>> Monoid<PTIMES<R,PLUS,TIMES>> for Polynomial<R,PLUS,TIMES> where R:Ring<PLUS,TIMES> {
+impl<R,O> Monoid<PTIMES<R,O>> for Polynomial<R,O> where O:RingOperations<R>,R:Ring<O> {
     fn identity() -> Self {
         Self::one()
     }
 }
-impl<R,PLUS:O2<R>,TIMES:O2<R>> Monoid<PPLUS<R,PLUS,TIMES>> for Polynomial<R,PLUS,TIMES> where R:Ring<PLUS,TIMES> {
+impl<R,O> Monoid<PPLUS<R,O>> for Polynomial<R,O> where O:RingOperations<R>,R:Ring<O> {
     fn identity() -> Self {
         Self::zero()
     }
 }
-impl<R,PLUS:O2<R>,TIMES:O2<R>> Group<PPLUS<R,PLUS,TIMES>> for Polynomial<R,PLUS,TIMES> where R:Ring<PLUS,TIMES> {
+impl<R,O> Group<PPLUS<R,O>> for Polynomial<R,O> where O:RingOperations<R>,R:Ring<O> {
     fn inverse(self) -> Self {
         self.negated()
     }
 }
-impl<R,PLUS:O2<R>,TIMES:O2<R>> Ring<PPLUS<R,PLUS,TIMES>,PTIMES<R,PLUS,TIMES>> for Polynomial<R,PLUS,TIMES> where R:Ring<PLUS,TIMES> {
+struct PolyOps<R,O> where O:RingOperations<R>,R:Ring<O> {
+    r:PhantomData<R>,
+    o:PhantomData<O>
+}
+impl<R,O> RingOperations<Polynomial<R,O>> for PolyOps<R,O> where O:RingOperations<R>, R:Ring<O> {
+    type PLUS = PPLUS<R,O>;
+    type TIMES = PTIMES<R,O>;
+}
+impl<R,O> Ring<PolyOps<R,O>> for Polynomial<R,O> where O:RingOperations<R>,R:Ring<O> {
 
 }
 struct ProductTimes<M1,T1:O2<M1>,M2,T2:O2<M2>> where M1:Monoid<T1>, M2:Monoid<T2> {
@@ -257,7 +267,17 @@ impl<M1,T1:O2<M1>,M2,T2:O2<M2>> Group<ProductTimes<M1,T1,M2,T2>> for (M1,M2) whe
         (self.0.inverse(),self.1.inverse())
     }
 }
-impl<M1,P1:O2<M1>,T1:O2<M1>,M2,P2:O2<M2>,T2:O2<M2>> Ring<ProductTimes<M1,P1,M2,P2>,ProductTimes<M1,T1,M2,T2>> for (M1,M2) where M1:Ring<P1,T1>, M2:Ring<P2,T2> {
+struct ProductOps<R,O,S,P> where O:RingOperations<R>,R:Ring<O>, P:RingOperations<S>,S:Ring<P> {
+    r:PhantomData<R>,
+    o:PhantomData<O>,
+    s:PhantomData<S>,
+    p:PhantomData<P>
+}
+impl<R,O,S,P> RingOperations<(R,S)> for ProductOps<R,O,S,P> where O:RingOperations<R>,R:Ring<O>, P:RingOperations<S>,S:Ring<P> {
+    type PLUS = ProductTimes<R,O::PLUS,S,P::PLUS>;
+    type TIMES = ProductTimes<R,O::TIMES,S,P::TIMES>;
+}
+impl<R,O,S,P> Ring<ProductOps<R,O,S,P>> for (R,S) where O:RingOperations<R>,R:Ring<O>, P:RingOperations<S>,S:Ring<P> {
 }
 impl<S,T> Set for (S,T) where S:Set, T:Set {}
 impl Set for i64 {}
@@ -284,7 +304,12 @@ impl Monoid<i64Times> for i64 {
         1
     }
 }
-impl Ring<i64Plus,i64Times> for i64 {}
+struct i64Ops {}
+impl RingOperations<i64> for i64Ops {
+    type PLUS = i64Plus;
+    type TIMES = i64Times;
+}
+impl Ring<i64Ops> for i64 {}
 fn main() {
     let x=(1i64,4i64);
     let y=(-2i64,3i64);
