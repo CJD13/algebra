@@ -1,4 +1,5 @@
-use std::ops::Mul;
+use std::cmp::Ordering;
+use std::ops::{Mul, Add};
 use std::marker::PhantomData;
 pub trait FiniteSet:Set+IntoIterator {
     const ORDER: u64;
@@ -73,7 +74,45 @@ struct Polynomial<R,PLUS:O2<R>,TIMES:O2<R>> where R:Ring<PLUS,TIMES> {
     p:PhantomData<PLUS>,
     t:PhantomData<TIMES>
 }
-
+#[derive(PartialEq,PartialOrd,Eq,Ord)]
+pub enum Degree {
+    NegInfty,
+    Integer(usize)
+}
+impl PartialEq<usize> for Degree {
+    fn eq(&self, other: &usize) -> bool {
+        match self {
+            &Degree::NegInfty => false,
+            &Degree::Integer(n) => &n==other
+        }
+    }
+}
+impl PartialOrd<usize> for Degree {
+    fn partial_cmp(&self, other: &usize) -> Option<std::cmp::Ordering> {
+        match self {
+            &Degree::NegInfty => Some(Ordering::Less),
+            &Degree::Integer(n) => n.partial_cmp(other)
+        }
+    }
+}
+impl Add<usize> for Degree {
+    type Output = Degree;
+    fn add(self, rhs: usize) -> Self::Output {
+        match self {
+            Degree::NegInfty => Degree::NegInfty,
+            Degree::Integer(n) => Degree::Integer(n+rhs)
+        }
+    }
+}
+impl Add<Degree> for Degree {
+    type Output = Degree;
+    fn add(self, other:Degree) -> Degree {
+        match self {
+            Degree::NegInfty => Degree::NegInfty,
+            Degree::Integer(n) => other+n
+        }
+    }
+}
 impl<R,PLUS:O2<R>,TIMES:O2<R>> Polynomial<R,PLUS,TIMES> where R:Ring<PLUS,TIMES>{
     fn trim_zeros(mut v:Vec<R>)->Vec<R> {
         if v.len()>0 {
@@ -91,41 +130,43 @@ impl<R,PLUS:O2<R>,TIMES:O2<R>> Polynomial<R,PLUS,TIMES> where R:Ring<PLUS,TIMES>
         Polynomial {data:vec![],p:PhantomData,t:PhantomData}}
     fn one()->Self {
         Polynomial {data:vec![<R as Monoid<TIMES>>::identity()],p:PhantomData,t:PhantomData}}
-    fn degree(&self) -> Option<usize> {
-        if self.data.len()==0 {None} else {Some(self.data.len()-1)}
+    fn degree(&self) -> Degree {
+        if self.data.len()==0 {Degree::NegInfty} else {Degree::Integer(self.data.len()-1)}
     }
     fn coefficient(&self,n:usize) -> R{
-        if self.degree().is_some_and(|d| n<=d) {
+        if self.degree()>=n {
             self.data[n].clone()
         } else {
             R::zero()
         }
     }
     fn add(self, other:Self)->Self{
-        let l=usize::max(self.degree().map_or(0,|x|x+1),other.degree().map_or(0,|x|x+1));
+        let l=Degree::max(self.degree(),other.degree());
         let mut data=vec![];
-        for n in 0..l{
+        let mut n = 0;
+        while l>=n{
             data.push(PLUS::F(self.coefficient(n),other.coefficient(n)));
+            n+=1;
         }
         data=Self::trim_zeros(data);
         Polynomial {data:data,p:PhantomData,t:PhantomData}
     }
     fn mul(self, other:Self) ->Self{
-        let l = self.degree().and_then(|x| other.degree().and_then(|y| Some(x+y)));
-        l.map_or(Self::zero(),
-            |l| {
-                let mut res=vec![];
-                for i in 0..=l {
-                    let mut s=R::zero();
-                    for j in 0..=i {
-                        s=PLUS::F(s,TIMES::F(self.coefficient(j),other.coefficient(i-j)));
-                    }
-                    res.push(s);
-                }
-                res=Self::trim_zeros(res);
-                Polynomial {data:res,p:PhantomData,t:PhantomData}
-        })
+        let l = self.degree()+other.degree();
+        let mut res=vec![];
+        let mut i=0;
+        while l>=i {
+            let mut s=R::zero();
+            for j in 0..=i {
+                s=PLUS::F(s,TIMES::F(self.coefficient(j),other.coefficient(i-j)));
+            }
+            res.push(s);
+            i+=1;
+        }
+        res=Self::trim_zeros(res);
+        Polynomial {data:res,p:PhantomData,t:PhantomData}
     }
+    
     fn negated(self) -> Self {
         let mut res=vec![];
         for i in 0..self.data.len() {
@@ -136,6 +177,18 @@ impl<R,PLUS:O2<R>,TIMES:O2<R>> Polynomial<R,PLUS,TIMES> where R:Ring<PLUS,TIMES>
     //fn derivative(self)->Self {
         //self
     //}
+}
+impl<R,PLUS:O2<R>,TIMES:O2<R>> Add<Polynomial<R,PLUS,TIMES>> for Polynomial<R,PLUS,TIMES> where R:Ring<PLUS,TIMES> {
+    type Output=Self;
+    fn add(self, rhs: Polynomial<R,PLUS,TIMES>) -> Self::Output {
+        self.add(rhs)
+    }
+}
+impl<R,PLUS:O2<R>,TIMES:O2<R>> Mul<Polynomial<R,PLUS,TIMES>> for Polynomial<R,PLUS,TIMES> where R:Ring<PLUS,TIMES> {
+    type Output=Self;
+    fn mul(self, rhs: Polynomial<R,PLUS,TIMES>) -> Self::Output {
+        self.mul(rhs)
+    }
 }
 struct PPLUS<R,PLUS:O2<R>,TIMES:O2<R>> where R:Ring<PLUS,TIMES> {
     r:PhantomData<R>,
