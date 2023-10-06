@@ -1,14 +1,38 @@
 use std::cmp::Ordering;
+use std::iter::Filter;
 use std::ops::{Mul, Add};
 use std::marker::PhantomData;
+//use num::BigInt;
 mod test;
-pub trait FiniteSet:Set+IntoIterator {
+pub trait Subset<T> where T:Set {
+    //A subset of T is determined by which elements of T are members of it.
+    fn contains(t:&T) -> bool;
+    //A subset type will not ever be instantiated.
+}
+pub trait FiniteSubset<T>:Subset<T> where T:Set{
+    //A finite subset can be iterated over.
+    type IterType:Iterator<Item=T>;
+    fn get_iter()-> Self::IterType;
+    //An implementation must guarantee that each member t of T
+    //is == to exactly one item of the iterator if Self::contains(t) is true
+    //and does not == any if it is false.
+}
+pub trait FiniteSet:Set{
     const ORDER: u64;
     //A struct implementing FiniteSet must have ORDER equal to the number of objects of that struct.
-    //It must also be able to provide an iterator over its elements
+    //It must also be able to provide an iterator over its elements.
+    type IterType: Iterator<Item=Self>;
+    fn get_iter() ->Self::IterType;
+    //Any member of the struct must be == to exactly one of the iterms returned by the iterator.
 }
-pub trait Set: Clone+PartialEq {
+pub trait Set: Clone+Eq {
 
+}
+impl<S,T> FiniteSubset<T> for S where T:FiniteSet, S:Subset<T> {
+    type IterType = Filter<T::IterType,fn(&T)->bool>;
+    fn get_iter() -> Self::IterType {
+        T::get_iter().filter(S::contains)
+    }
 }
 pub trait O2<S>{
     const F: fn(S,S)->S;
@@ -75,7 +99,7 @@ pub trait Ring<O>:Group<O::PLUS>+Monoid<O::TIMES> where O:RingOperations<Self> {
     }
 }
 struct Polynomial<R,O:RingOperations<R>> where R:Ring<O> {
-    data:Vec<R>,
+    coefficients:Vec<R>,
     o:PhantomData<O>
 }
 #[derive(PartialEq,PartialOrd,Eq,Ord)]
@@ -131,15 +155,15 @@ impl<R,O> Polynomial<R,O> where O:RingOperations<R>,R:Ring<O>{
         v
     }
     fn zero()->Self {
-        Polynomial {data:vec![],o:PhantomData}}
+        Polynomial {coefficients:vec![],o:PhantomData}}
     fn one()->Self {
-        Polynomial {data:vec![<R as Monoid<O::TIMES>>::identity()],o:PhantomData}}
+        Polynomial {coefficients:vec![<R as Monoid<O::TIMES>>::identity()],o:PhantomData}}
     fn degree(&self) -> Degree {
-        if self.data.len()==0 {Degree::NegInfty} else {Degree::Integer(self.data.len()-1)}
+        if self.coefficients.len()==0 {Degree::NegInfty} else {Degree::Integer(self.coefficients.len()-1)}
     }
     fn coefficient(&self,n:usize) -> R{
         if self.degree()>=n {
-            self.data[n].clone()
+            self.coefficients[n].clone()
         } else {
             R::zero()
         }
@@ -153,7 +177,7 @@ impl<R,O> Polynomial<R,O> where O:RingOperations<R>,R:Ring<O>{
             n+=1;
         }
         data=Self::trim_zeros(data);
-        Polynomial {data:data,o:PhantomData}
+        Polynomial {coefficients:data,o:PhantomData}
     }
     fn mul(self, other:Self) ->Self{
         let l = self.degree()+other.degree();
@@ -168,19 +192,30 @@ impl<R,O> Polynomial<R,O> where O:RingOperations<R>,R:Ring<O>{
             i+=1;
         }
         res=Self::trim_zeros(res);
-        Polynomial {data:res,o:PhantomData}
+        Polynomial {coefficients:res,o:PhantomData}
     }
     
     fn negated(self) -> Self {
         let mut res=vec![];
-        for i in 0..self.data.len() {
-            res.push(self.data[i].clone().negated());
+        for i in 0..self.coefficients.len() {
+            res.push(self.coefficients[i].clone().negated());
         }
-        Polynomial {data:res, o:PhantomData}
+        Polynomial {coefficients:res, o:PhantomData}
     }
     //fn derivative(self)->Self {
         //self
     //}
+    fn of(&self,x:R) -> R {
+        let mut n = 0;
+        let mut res = R::zero();
+        let mut xPower = R::one();
+        while self.degree()>=n {
+            res=res.plus(Ring::times(self.coefficient(n),xPower.clone()));
+            xPower=Ring::times(xPower,x.clone());
+            n+=1;
+        }
+        res
+    }
 }
 impl<R,O> Add<Polynomial<R,O>> for Polynomial<R,O> where O:RingOperations<R>,R:Ring<O> {
     type Output=Self;
@@ -211,12 +246,14 @@ impl<R,O> O2<Polynomial<R,O>> for PTIMES<R,O> where O:RingOperations<R>,R:Ring<O
 
 impl<R,O> PartialEq for Polynomial<R,O> where O:RingOperations<R>,R:Ring<O> {
     fn eq(&self, other: &Self)->bool {
-        return self.data==other.data
+        return self.coefficients==other.coefficients
     }
+}
+impl<R,O> Eq for Polynomial<R,O> where O:RingOperations<R>,R:Ring<O> {
 }
 impl<R,O> Clone for Polynomial<R,O> where O:RingOperations<R>,R:Ring<O> {
     fn clone(&self) -> Self {
-        Polynomial {data:self.data.clone(),o:PhantomData}
+        Polynomial {coefficients:self.coefficients.clone(),o:PhantomData}
     }
 }
 impl<R,O> Set for Polynomial<R,O> where O:RingOperations<R>,R:Ring<O> {
@@ -313,9 +350,10 @@ impl Ring<i64Ops> for i64 {}
 fn main() {
     let x=(1i64,4i64);
     let y=(-2i64,3i64);
-
+    let f=Polynomial{coefficients:vec![(1,0),(2,1),(-1,3)],o:PhantomData};
     println!("{:?}",x.plus(y));
     println!("{:?}",Ring::times(x,y));
+    println!("{:?}",f.of(x))
 }
 #[cfg(test)]
 mod tests {
