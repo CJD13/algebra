@@ -1,14 +1,17 @@
+use core::panic;
 use std::cmp::Ordering;
 use std::iter::Filter;
 use std::ops::{Mul, Add};
 use std::marker::PhantomData;
 //use num::BigInt;
 mod test;
-pub trait Subset<T>:Into<T>+TryFrom<T> where T:Set {
+pub trait Subset<T> where T:Set {
     //A subset of T is determined by which elements of T are members of it.
     fn contains(t:&T) -> bool;
     //any object of type Self can be coerced into one of type T
-    
+    fn inclusion(self) -> T;
+    //some Ts can be turned into Selfs
+    fn try_into(t:T) -> Self;
 }
 pub trait FiniteSubset<T>:Subset<T>+IntoIterator<Item=T> where T:Set{
     const ORDER: usize;
@@ -314,6 +317,26 @@ impl<R,O,S,P> RingOperations<(R,S)> for (O,P) where O:RingOperations<R>,R:Ring<O
     type TIMES = (O::TIMES,P::TIMES);
 }
 impl<R,O,S,P> Ring<(O,P)> for (R,S) where O:RingOperations<R>,R:Ring<O>, P:RingOperations<S>,S:Ring<P> {
+}
+struct NonZero<R,O> where R:Ring<O>,O:RingOperations<R> {
+    r:R,
+    o:PhantomData<O>
+}
+
+impl<R,O> Subset<R> for NonZero<R,O> where R:Ring<O>, O:RingOperations<R> {
+    fn contains(r:&R) -> bool {
+        r==&R::zero()
+    }
+    fn inclusion(self) -> R {
+        self.r
+    }
+    fn try_into(t:R) -> Self {
+        if Self::contains(&t) {
+            Self {r:t, o:PhantomData}
+        } else {
+            panic!()
+        }
+    }
 }
 impl<S,T> Set for (S,T) where S:Set, T:Set {}
 impl Set for i64 {}
