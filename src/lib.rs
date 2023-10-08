@@ -11,7 +11,7 @@ pub trait Subset<T> where T:Set {
     //any object of type Self can be coerced into one of type T
     fn inclusion(self) -> T;
     //some Ts can be turned into Selfs
-    fn try_into(t:T) -> Self;
+    fn try_from(t:T) -> Self;
 }
 pub trait FiniteSubset<T>:Subset<T>+IntoIterator<Item=T> where T:Set{
     const ORDER: usize;
@@ -100,6 +100,12 @@ pub trait Ring<O>:Group<O::PLUS>+Monoid<O::TIMES> where O:RingOperations<Self> {
         Ring::times(self,Group::pow(Self::one(),other))
     }
 }
+pub trait Field<O>:Ring<O> where O:RingOperations<Self>, O::TIMES:O2<NonZero<Self,O>>, NonZero<Self,O>:Group<O::TIMES> {
+    //Multiplicative inverse. Panics if given zero.
+    fn inverse(self) -> Self {
+        <NonZero<Self,O> as Subset<Self>>::try_from(self).inverse().inclusion()
+    }
+}
 struct Polynomial<R,O:RingOperations<R>> where R:Ring<O> {
     coefficients:Vec<R>,
     o:PhantomData<O>
@@ -109,19 +115,28 @@ pub enum Degree {
     NegInfty,
     Integer(usize)
 }
+impl Degree {
+    //panics if -infty
+    fn unwrap(self)->usize {
+        match self {
+            Self::Integer(n)=>n,
+            Self::NegInfty=>panic!()
+        }
+    }
+}
 impl PartialEq<usize> for Degree {
     fn eq(&self, other: &usize) -> bool {
-        match self {
-            &Degree::NegInfty => false,
-            &Degree::Integer(n) => &n==other
+        match *self {
+            Degree::NegInfty => false,
+            Degree::Integer(n) => &n==other
         }
     }
 }
 impl PartialOrd<usize> for Degree {
     fn partial_cmp(&self, other: &usize) -> Option<std::cmp::Ordering> {
-        match self {
-            &Degree::NegInfty => Some(Ordering::Less),
-            &Degree::Integer(n) => n.partial_cmp(other)
+        match *self {
+            Degree::NegInfty => Some(Ordering::Less),
+            Degree::Integer(n) => n.partial_cmp(other)
         }
     }
 }
@@ -145,9 +160,9 @@ impl Add<Degree> for Degree {
 }
 impl<R,O> Polynomial<R,O> where O:RingOperations<R>,R:Ring<O>{
     fn trim_zeros(mut v:Vec<R>)->Vec<R> {
-        if v.len()>0 {
+        if !v.is_empty() {
             let mut k=v.pop().unwrap();
-            while k==R::zero()&&v.len()>0{
+            while k==R::zero()&&!v.is_empty(){
                 k=v.pop().unwrap();
             }
             if k!=R::zero() {
@@ -159,9 +174,15 @@ impl<R,O> Polynomial<R,O> where O:RingOperations<R>,R:Ring<O>{
     fn zero()->Self {
         Polynomial {coefficients:vec![],o:PhantomData}}
     fn one()->Self {
-        Polynomial {coefficients:vec![<R as Monoid<O::TIMES>>::identity()],o:PhantomData}}
+        Polynomial {coefficients:vec![R::one()],o:PhantomData}}
+    fn x()->Self {
+        Polynomial {coefficients:vec![R::one(),R::zero()],o:PhantomData}
+    }
+    fn constant(c:R)->Self {
+        Polynomial {coefficients:Self::trim_zeros(vec![c]),o:PhantomData}
+    }
     fn degree(&self) -> Degree {
-        if self.coefficients.len()==0 {Degree::NegInfty} else {Degree::Integer(self.coefficients.len()-1)}
+        if self.coefficients.is_empty() {Degree::NegInfty} else {Degree::Integer(self.coefficients.len()-1)}
     }
     fn coefficient(&self,n:usize) -> R{
         if self.degree()>=n {
@@ -217,6 +238,29 @@ impl<R,O> Polynomial<R,O> where O:RingOperations<R>,R:Ring<O>{
             n+=1;
         }
         res
+    }
+    //Gives the leading coefficient of self. The result is guaranteed to be nonzero. Panics if given the zero polynomial,
+    //which has no leading coefficient.
+    fn lead_coeff(&self) -> R {
+        match self.degree() {
+            Degree::Integer(n) => self.coefficient(n),
+            Degree::NegInfty => panic!()
+        }
+    }
+}
+impl<F,O> Polynomial<F,O> where O:RingOperations<F>,F:Field<O>,O::TIMES:O2<NonZero<F,O>>,NonZero<F,O>:Group<O::TIMES>{
+    //panics if the divisor is zero
+    fn divide(mut dividend:Self,divisor:Self) -> (Self, Self) {
+        let n = divisor.degree().unwrap();
+        let i = Field::inverse(divisor.lead_coeff());
+        let mut quotient = Self::zero();
+        while dividend.degree()>=divisor.degree() {
+            let m=dividend.degree().unwrap();
+            let term = Ring::times(Self::constant(Ring::times(dividend.lead_coeff(),i.clone())),Monoid::<PTIMES<F,O>>::pow(Self::x(),(m-n) as u64));
+            quotient=quotient+term.clone();
+            dividend=dividend+(divisor.clone()*term).negated();
+        }
+        (quotient, dividend)
     }
 }
 impl<R,O> Add<Polynomial<R,O>> for Polynomial<R,O> where O:RingOperations<R>,R:Ring<O> {
@@ -330,7 +374,7 @@ impl<R,O> Subset<R> for NonZero<R,O> where R:Ring<O>, O:RingOperations<R> {
     fn inclusion(self) -> R {
         self.r
     }
-    fn try_into(t:R) -> Self {
+    fn try_from(t:R) -> Self {
         if Self::contains(&t) {
             Self {r:t, o:PhantomData}
         } else {
