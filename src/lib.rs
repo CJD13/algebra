@@ -4,36 +4,35 @@ use std::ops::{Mul, Add};
 use std::marker::PhantomData;
 //use num::BigInt;
 mod test;
-pub trait Subset<T> where T:Set {
+pub trait Subset<T>:Into<T>+TryFrom<T> where T:Set {
     //A subset of T is determined by which elements of T are members of it.
     fn contains(t:&T) -> bool;
-    //A subset type will not ever be instantiated.
+    //any object of type Self can be coerced into one of type T
+    
 }
-pub trait FiniteSubset<T>:Subset<T> where T:Set{
+pub trait FiniteSubset<T>:Subset<T>+IntoIterator<Item=T> where T:Set{
+    const ORDER: usize;
     //A finite subset can be iterated over.
-    type IterType:Iterator<Item=T>;
-    fn get_iter()-> Self::IterType;
     //An implementation must guarantee that each member t of T
     //is == to exactly one item of the iterator if Self::contains(t) is true
     //and does not == any if it is false.
 }
-pub trait FiniteSet:Set{
-    const ORDER: u64;
+pub trait FiniteSet:Set+IntoIterator<Item=Self>{
+    const ORDER: usize;
     //A struct implementing FiniteSet must have ORDER equal to the number of objects of that struct.
     //It must also be able to provide an iterator over its elements.
-    type IterType: Iterator<Item=Self>;
-    fn get_iter() ->Self::IterType;
     //Any member of the struct must be == to exactly one of the iterms returned by the iterator.
 }
 pub trait Set: Clone+Eq {
 
 }
-impl<S,T> FiniteSubset<T> for S where T:FiniteSet, S:Subset<T> {
+/*impl<S,T> FiniteSubset<T> for S where T:FiniteSet, S:Subset<T> {
+    const ORDER: usize = T::get_iter().filter(S::contains).collect::<Vec<_>>().len();
     type IterType = Filter<T::IterType,fn(&T)->bool>;
     fn get_iter() -> Self::IterType {
         T::get_iter().filter(S::contains)
     }
-}
+}*/
 pub trait O2<S>{
     const F: fn(S,S)->S;
 }
@@ -285,36 +284,36 @@ impl<R,O> RingOperations<Polynomial<R,O>> for PolyOps<R,O> where O:RingOperation
 impl<R,O> Ring<PolyOps<R,O>> for Polynomial<R,O> where O:RingOperations<R>,R:Ring<O> {
 
 }
-struct ProductTimes<M1,T1:O2<M1>,M2,T2:O2<M2>> where M1:Monoid<T1>, M2:Monoid<T2> {
+/*struct ProductTimes<M1,T1:O2<M1>,M2,T2:O2<M2>> where M1:Monoid<T1>, M2:Monoid<T2> {
     g1:PhantomData<M1>,
     t1:PhantomData<T1>,
     g2:PhantomData<M2>,
     t2:PhantomData<T2>
-}
-impl<M1,T1:O2<M1>,M2,T2:O2<M2>> O2<(M1,M2)> for ProductTimes<M1,T1,M2,T2>  where M1:Monoid<T1>, M2:Monoid<T2> {
+}*/
+impl<M1,T1:O2<M1>,M2,T2:O2<M2>> O2<(M1,M2)> for (T1,T2)  where M1:Monoid<T1>, M2:Monoid<T2> {
     const F:fn((M1,M2),(M1,M2))->(M1,M2) = |(m1,m2),(m3,m4)| (m1.times(m3),m2.times(m4));
 }
-impl<M1,T1:O2<M1>,M2,T2:O2<M2>> Monoid<ProductTimes<M1,T1,M2,T2>> for (M1,M2) where M1:Monoid<T1>, M2:Monoid<T2> {
+impl<M1,T1:O2<M1>,M2,T2:O2<M2>> Monoid<(T1,T2)> for (M1,M2) where M1:Monoid<T1>, M2:Monoid<T2> {
     fn identity() -> Self {
         (M1::identity(),M2::identity())
     }
 }
-impl<M1,T1:O2<M1>,M2,T2:O2<M2>> Group<ProductTimes<M1,T1,M2,T2>> for (M1,M2) where M1:Group<T1>, M2:Group<T2> {
+impl<M1,T1:O2<M1>,M2,T2:O2<M2>> Group<(T1,T2)> for (M1,M2) where M1:Group<T1>, M2:Group<T2> {
     fn inverse(self)->Self {
         (self.0.inverse(),self.1.inverse())
     }
 }
-struct ProductOps<R,O,S,P> where O:RingOperations<R>,R:Ring<O>, P:RingOperations<S>,S:Ring<P> {
+/*struct ProductOps<R,O,S,P> where O:RingOperations<R>,R:Ring<O>, P:RingOperations<S>,S:Ring<P> {
     r:PhantomData<R>,
     o:PhantomData<O>,
     s:PhantomData<S>,
     p:PhantomData<P>
+}*/
+impl<R,O,S,P> RingOperations<(R,S)> for (O,P) where O:RingOperations<R>,R:Ring<O>, P:RingOperations<S>,S:Ring<P> {
+    type PLUS = (O::PLUS,P::PLUS);
+    type TIMES = (O::TIMES,P::TIMES);
 }
-impl<R,O,S,P> RingOperations<(R,S)> for ProductOps<R,O,S,P> where O:RingOperations<R>,R:Ring<O>, P:RingOperations<S>,S:Ring<P> {
-    type PLUS = ProductTimes<R,O::PLUS,S,P::PLUS>;
-    type TIMES = ProductTimes<R,O::TIMES,S,P::TIMES>;
-}
-impl<R,O,S,P> Ring<ProductOps<R,O,S,P>> for (R,S) where O:RingOperations<R>,R:Ring<O>, P:RingOperations<S>,S:Ring<P> {
+impl<R,O,S,P> Ring<(O,P)> for (R,S) where O:RingOperations<R>,R:Ring<O>, P:RingOperations<S>,S:Ring<P> {
 }
 impl<S,T> Set for (S,T) where S:Set, T:Set {}
 impl Set for i64 {}
