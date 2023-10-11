@@ -1,6 +1,5 @@
 use core::panic;
 use std::cmp::Ordering;
-use std::iter::Filter;
 use std::ops::{Mul, Add};
 use std::marker::PhantomData;
 //use num::BigInt;
@@ -297,7 +296,7 @@ impl<R,O> O2<Polynomial<R,O>> for PTIMES<R,O> where O:RingOperations<R>,R:Ring<O
 
 impl<R,O> PartialEq for Polynomial<R,O> where O:RingOperations<R>,R:Ring<O> {
     fn eq(&self, other: &Self)->bool {
-        return self.coefficients==other.coefficients
+        self.coefficients==other.coefficients
     }
 }
 impl<R,O> Eq for Polynomial<R,O> where O:RingOperations<R>,R:Ring<O> {
@@ -367,7 +366,7 @@ impl<R,O,S,P> RingOperations<(R,S)> for (O,P) where O:RingOperations<R>,R:Ring<O
 }
 impl<R,O,S,P> Ring<(O,P)> for (R,S) where O:RingOperations<R>,R:Ring<O>, P:RingOperations<S>,S:Ring<P> {
 }
-struct NonZero<R,O> where R:Ring<O>,O:RingOperations<R> {
+pub struct NonZero<R,O> where R:Ring<O>,O:RingOperations<R> {
     r:R,
     o:PhantomData<O>
 }
