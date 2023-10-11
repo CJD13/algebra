@@ -417,19 +417,20 @@ impl RingOperations<i64> for i64Ops {
     type TIMES = i64Times;
 }
 impl Ring<i64Ops> for i64 {}
-fn main() {
-    let x=(1i64,4i64);
-    let y=(-2i64,3i64);
-    let f=Polynomial{coefficients:vec![(1,0),(2,1),(-1,3)],o:PhantomData};
-    println!("{:?}",x.plus(y));
-    println!("{:?}",Ring::times(x,y));
-    println!("{:?}",f.of(x))
-}
+
 #[cfg(test)]
 mod tests {
-    use crate::main;
+    use crate::*;
+
     #[test]
     fn t1() {
-        main();
+        {
+            let x=(1i64,4i64);
+            let y=(-2i64,3i64);
+            let f=Polynomial{coefficients:vec![(1,0),(2,1),(-1,3)],o:PhantomData};
+            println!("{:?}",x.plus(y));
+            println!("{:?}",Ring::times(x,y));
+            println!("{:?}",f.of(x))
+        };
     }
 }
