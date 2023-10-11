@@ -6,25 +6,25 @@ use std::marker::PhantomData;
 //use num::BigInt;
 mod test;
 pub trait Subset<T> where T:Set {
-    //A subset of T is determined by which elements of T are members of it.
+    /// A subset of `T` is determined by which elements of `T` are members of it.
     fn contains(t:&T) -> bool;
-    //any object of type Self can be coerced into one of type T
+    /// Any object of type `Self` can be coerced into one of type `T`
     fn inclusion(self) -> T;
-    //some Ts can be turned into Selfs
+    /// Some `T`s can be turned into `Self`s
     fn try_from(t:T) -> Self;
 }
+
+/// A finite subset can be iterated over. An implementation must guarantee that each member t of T
+/// is `==` to exactly one item of the iterator if Self::contains(t) is true and does not == any if
+/// it is false.
 pub trait FiniteSubset<T>:Subset<T>+IntoIterator<Item=T> where T:Set{
     const ORDER: usize;
-    //A finite subset can be iterated over.
-    //An implementation must guarantee that each member t of T
-    //is == to exactly one item of the iterator if Self::contains(t) is true
-    //and does not == any if it is false.
 }
+/// A struct implementing FiniteSet must have ORDER equal to the number of objects of that struct.
+/// It must also be able to provide an iterator over its elements. Any member of the struct must be
+/// == to exactly one of the iterms returned by the iterator.
 pub trait FiniteSet:Set+IntoIterator<Item=Self>{
     const ORDER: usize;
-    //A struct implementing FiniteSet must have ORDER equal to the number of objects of that struct.
-    //It must also be able to provide an iterator over its elements.
-    //Any member of the struct must be == to exactly one of the iterms returned by the iterator.
 }
 pub trait Set: Clone+Eq {
 
@@ -45,10 +45,13 @@ pub trait O0<S>{
 pub trait O1<S> {
     const F: fn(S)->S;
 }
+///Any implementation must guarantee that:
+/// * the multiplication `Operation` is associative, and
+/// * `Monoid::identity` returns the identity of the multiplication.
 pub trait Monoid<Operation:O2<Self>>:Set{
     fn identity() -> Self;
-    //Any implementation must guarantee that the multiplication is associative,
-    //and that identity returns the identity of the multiplication.
+    /// The correctness of the default implementation of this function relies on the properties
+    /// required by this trait.
     fn pow(a:Self, n: u64)->Self {
         if n==0 {return Self::identity()}
         let rem=if n%2==1 {a.clone()} else {Self::identity()};
@@ -60,13 +63,15 @@ pub trait Monoid<Operation:O2<Self>>:Set{
     }
 }
 
+/// In addition to the properties required by the [`Monoid`] trait, any implementation must
+/// guarantee that the product of any element with its inverse gives the identity.
 pub trait Group<Operation:O2<Self>>:Monoid<Operation>{
     fn identity() -> Self {
         <Self as Monoid<Operation>>::identity()
     }
+    /// For a implementation to be correct, for every element `a` in a group `G`, `Operation::F(a,
+    /// a.inverse())` should be `==` to `G::identity()`.
     fn inverse(self)->Self;
-    //Any implementation must guarantee that
-    //the product of any element with its inverse gives the identity.
     fn pow(a:Self, n: i64)->Self {
         if n>0 {return <Self as Monoid<Operation>>::pow(a, n as u64)}
         <Self as Monoid<Operation>>::pow(a,-n as u64).inverse()
@@ -101,7 +106,7 @@ pub trait Ring<O>:Group<O::PLUS>+Monoid<O::TIMES> where O:RingOperations<Self> {
     }
 }
 pub trait Field<O>:Ring<O> where O:RingOperations<Self>, O::TIMES:O2<NonZero<Self,O>>, NonZero<Self,O>:Group<O::TIMES> {
-    //Multiplicative inverse. Panics if given zero.
+    /// Multiplicative inverse. Panics if given zero.
     fn inverse(self) -> Self {
         <NonZero<Self,O> as Subset<Self>>::try_from(self).inverse().inclusion()
     }
@@ -116,7 +121,7 @@ pub enum Degree {
     Integer(usize)
 }
 impl Degree {
-    //panics if -infty
+    /// Panics if the degree is `Degree::NegInfty`.
     fn unwrap(self)->usize {
         match self {
             Self::Integer(n)=>n,
@@ -239,8 +244,8 @@ impl<R,O> Polynomial<R,O> where O:RingOperations<R>,R:Ring<O>{
         }
         res
     }
-    //Gives the leading coefficient of self. The result is guaranteed to be nonzero. Panics if given the zero polynomial,
-    //which has no leading coefficient.
+    /// Gives the leading coefficient of self. The result is guaranteed to be nonzero. Panics if
+    /// given the zero polynomial, which has no leading coefficient.
     fn lead_coeff(&self) -> R {
         match self.degree() {
             Degree::Integer(n) => self.coefficient(n),
@@ -249,7 +254,7 @@ impl<R,O> Polynomial<R,O> where O:RingOperations<R>,R:Ring<O>{
     }
 }
 impl<F,O> Polynomial<F,O> where O:RingOperations<F>,F:Field<O>,O::TIMES:O2<NonZero<F,O>>,NonZero<F,O>:Group<O::TIMES>{
-    //panics if the divisor is zero
+    /// Panics if the divisor is zero
     fn divide(mut dividend:Self,divisor:Self) -> (Self, Self) {
         let n = divisor.degree().unwrap();
         let i = Field::inverse(divisor.lead_coeff());
