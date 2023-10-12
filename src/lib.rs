@@ -79,12 +79,19 @@ pub trait Group<Operation:O2<Self>>:Monoid<Operation>{
         Operation::F(self,other)
     }
 }
+pub trait AbelianGroup<Operation:O2<Self>>:Group<Operation> {
+    //Only implement this trait for abelian groups.
+    //A group G is abelian if gh=hg for all g, h in G.
+}
 pub trait Subgroup<G,Operation:O2<G>>:Subset<G>+Group<Operation> where G:Group<Operation>,Operation:O2<Self>{
 
 }
 pub trait NormalSubgroup<G,Operation:O2<G>>:Subgroup<G,Operation> where G:Group<Operation>,Operation:O2<Self>{
     //Only implement this trait for normal subgroups.
     //A subgroup H of a group G is normal if for all h in H and g in G, ghg^{-1} is an element of H.
+}
+impl<G:AbelianGroup<Op>,Op:O2<G>,S:Subgroup<G,Op>> NormalSubgroup<G,Op> for S where Op:O2<S>{
+    //Any subgroup of an abelian group is normal.
 }
 pub trait RingOperations<T> where Self::PLUS:O2<T>,Self::TIMES:O2<T>{
     type PLUS;
