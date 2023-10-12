@@ -1,5 +1,6 @@
 use core::panic;
 use std::cmp::Ordering;
+use std::fmt::Debug;
 use std::ops::{Mul, Add};
 use std::marker::PhantomData;
 //use num::BigInt;
@@ -83,6 +84,17 @@ pub trait Subgroup<G,Operation:O2<G>>:Subset<G>+Group<Operation> where G:Group<O
 pub trait NormalSubgroup<G,Operation:O2<G>>:Subgroup<G,Operation> where G:Group<Operation>,Operation:O2<Self>{
     //Only implement this trait for normal subgroups.
     //A subgroup H of a group G is normal if for all h in H and g in G, ghg^{-1} is an element of H.
+    //When performing operations in a quotient group it can improve efficiency to replace representatives with simpler equivalent representatives.
+    //The prototypical example is the % operator; applying this repeatedly when working mod n
+    //keeps numbers small and computations fast.
+    //Override this with a good reduction method.
+    fn reduce(g:G) -> G {
+        if Self::contains(&g) {
+            G::identity()
+        } else {
+            g
+        }
+    }
 }
 impl<G:AbelianGroup<Op>,Op:O2<G>,S:Subgroup<G,Op>> NormalSubgroup<G,Op> for S where Op:O2<S>{
     //Any subgroup of an abelian group is normal.
@@ -416,7 +428,7 @@ impl<G,H,Op> Set for QuotientGroup<G,H,Op> where G:Group<Op>, Op:O2<G>+O2<H>,H:N
 
 }
 impl<G,H,Op> O2<QuotientGroup<G,H,Op>> for Op where G:Group<Op>, Op:O2<G>+O2<H>,H:NormalSubgroup<G,Op> {
-    const F: fn(QuotientGroup<G,H,Op>,QuotientGroup<G,H,Op>)->QuotientGroup<G,H,Op> = |a, b| {QuotientGroup { representative: a.representative.times(b.representative), h: PhantomData, o: PhantomData }};
+    const F: fn(QuotientGroup<G,H,Op>,QuotientGroup<G,H,Op>)->QuotientGroup<G,H,Op> = |a, b| {QuotientGroup { representative: H::reduce(a.representative.times(b.representative)), h: PhantomData, o: PhantomData }};
 }
 impl<G,H,Op> Monoid<Op> for QuotientGroup<G,H,Op> where G:Group<Op>, Op:O2<G>+O2<H>,H:NormalSubgroup<G,Op> {
     fn identity() -> Self {
@@ -426,6 +438,17 @@ impl<G,H,Op> Monoid<Op> for QuotientGroup<G,H,Op> where G:Group<Op>, Op:O2<G>+O2
 impl<G,H,Op> Group<Op> for QuotientGroup<G,H,Op> where G:Group<Op>, Op:O2<G>+O2<H>,H:NormalSubgroup<G,Op> {
     fn inverse(self)->Self {
         QuotientGroup { representative: self.representative.inverse(), h: PhantomData, o: PhantomData }
+    }
+}
+impl<G,H,Op> Debug for QuotientGroup<G,H,Op> where G:Group<Op>, Op:O2<G>+O2<H>,H:NormalSubgroup<G,Op>,G:Debug {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[{:?}]", self.representative)
+    }
+}
+impl<G,H,Op> QuotientGroup<G,H,Op> where G:Group<Op>, Op:O2<G>+O2<H>,H:NormalSubgroup<G,Op> {
+    //this is a group homomorphism from G to Self with kernel H
+    fn natural_projection(g:G)->Self {
+        Self {representative:H::reduce(g),h:PhantomData,o:PhantomData}
     }
 }
 impl<S,T> Set for (S,T) where S:Set, T:Set {}
@@ -459,7 +482,49 @@ impl RingOperations<i64> for i64Ops {
     type TIMES = i64Times;
 }
 impl Ring<i64Ops> for i64 {}
+#[derive(PartialEq,Eq,Clone)]
+struct Multiples<const N:i64> {
+    data: i64
+}
+impl<const N: i64> O2<Multiples<N>> for i64Plus {
+    const F: fn(Multiples<N>,Multiples<N>)->Multiples<N> = |a,b| Multiples {data: a.data+b.data};
+}
+impl<const N:i64> Set for Multiples<N> {
+    
+}
+impl<const N:i64> Subset<i64> for Multiples<N> {
+    fn contains(t:&i64) -> bool {
+        t%N==0
+    }
+    fn inclusion(self) -> i64 {
+        self.data
+    }
+    fn try_from(t:i64) -> Self {
+        if Self::contains(&t) {
+            Self {data:t}
+        } else {
+            panic!()
+        }
+    }
+}
+impl<const N:i64> Monoid<i64Plus> for Multiples<N> {
+    fn identity() -> Self {
+        Self {data:0}
+    }
+}
+impl<const N:i64> Group<i64Plus> for Multiples<N> {
+    fn inverse(self)->Self {
+        Self {data:-self.data}
+    }
+}
+impl<const N:i64> Subgroup<i64,i64Plus> for Multiples<N> {
 
+}
+impl<const N:i64> NormalSubgroup<i64,i64Plus> for Multiples<N> {
+    fn reduce(g:i64) -> i64 {
+        g%N
+    }
+}
 #[cfg(test)]
 mod tests {
     use crate::*;
@@ -472,7 +537,11 @@ mod tests {
             let f=Polynomial{coefficients:vec![(1,0),(2,1),(-1,3)],o:PhantomData};
             println!("{:?}",x.plus(y));
             println!("{:?}",Ring::times(x,y));
-            println!("{:?}",f.of(x))
+            println!("{:?}",f.of(x));
+            type ZMod15=QuotientGroup<i64,Multiples<15>,i64Plus>;
+            let o=ZMod15::natural_projection(27);
+            println!("{:?}",Group::pow(o.clone(), 15));
+            println!("{:?}",Group::pow(o, 7));
         };
     }
 }
