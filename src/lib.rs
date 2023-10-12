@@ -79,6 +79,13 @@ pub trait Group<Operation:O2<Self>>:Monoid<Operation>{
         Operation::F(self,other)
     }
 }
+pub trait Subgroup<G,Operation:O2<G>>:Subset<G>+Group<Operation> where G:Group<Operation>,Operation:O2<Self>{
+
+}
+pub trait NormalSubgroup<G,Operation:O2<G>>:Subgroup<G,Operation> where G:Group<Operation>,Operation:O2<Self>{
+    //Only implement this trait for normal subgroups.
+    //A subgroup H of a group G is normal if for all h in H and g in G, ghg^{-1} is an element of H.
+}
 pub trait RingOperations<T> where Self::PLUS:O2<T>,Self::TIMES:O2<T>{
     type PLUS;
     type TIMES;
