@@ -65,18 +65,12 @@ pub trait Monoid<Operation:O2<Self>>:Set{
 /// In addition to the properties required by the [`Monoid`] trait, any implementation must
 /// guarantee that the product of any element with its inverse gives the identity.
 pub trait Group<Operation:O2<Self>>:Monoid<Operation>{
-    fn identity() -> Self {
-        <Self as Monoid<Operation>>::identity()
-    }
     /// For a implementation to be correct, for every element `a` in a group `G`, `Operation::F(a,
     /// a.inverse())` should be `==` to `G::identity()`.
     fn inverse(self)->Self;
     fn pow(a:Self, n: i64)->Self {
         if n>0 {return <Self as Monoid<Operation>>::pow(a, n as u64)}
         <Self as Monoid<Operation>>::pow(a,-n as u64).inverse()
-    }
-    fn times(self, other:Self) -> Self {
-        Operation::F(self,other)
     }
 }
 pub trait AbelianGroup<Operation:O2<Self>>:Group<Operation> {
@@ -100,7 +94,7 @@ pub trait RingOperations<T> where Self::PLUS:O2<T>,Self::TIMES:O2<T>{
 pub trait Ring<O>:Group<O::PLUS>+Monoid<O::TIMES> where O:RingOperations<Self> {
     //Any implementation must guarantee that TIMES distributes over PLUS
     fn zero()->Self {
-        <Self as Group<O::PLUS>>::identity()
+        <Self as Monoid<O::PLUS>>::identity()
     }
     fn one()->Self {
         <Self as Monoid<O::TIMES>>::identity()
@@ -398,6 +392,40 @@ impl<R,O> Subset<R> for NonZero<R,O> where R:Ring<O>, O:RingOperations<R> {
         } else {
             panic!()
         }
+    }
+}
+pub struct QuotientGroup<G,H,Op> where G:Group<Op>, Op:O2<G>+O2<H>,H:NormalSubgroup<G,Op> {
+    representative: G,
+    h:PhantomData<H>,
+    o:PhantomData<Op>
+}
+impl<G,H,Op> Clone for QuotientGroup<G,H,Op> where G:Group<Op>, Op:O2<G>+O2<H>,H:NormalSubgroup<G,Op> {
+    fn clone(&self) -> Self {
+        Self {representative:self.representative.clone(),h:PhantomData,o:PhantomData}
+    }
+}
+impl<G,H,Op> PartialEq for QuotientGroup<G,H,Op> where G:Group<Op>, Op:O2<G>+O2<H>,H:NormalSubgroup<G,Op> {
+    fn eq(&self, other: &Self) -> bool {
+        H::contains(&self.representative.clone().times(other.representative.clone().inverse()))
+    }
+}
+impl<G,H,Op> Eq for QuotientGroup<G,H,Op> where G:Group<Op>, Op:O2<G>+O2<H>,H:NormalSubgroup<G,Op> {
+
+}
+impl<G,H,Op> Set for QuotientGroup<G,H,Op> where G:Group<Op>, Op:O2<G>+O2<H>,H:NormalSubgroup<G,Op> {
+
+}
+impl<G,H,Op> O2<QuotientGroup<G,H,Op>> for Op where G:Group<Op>, Op:O2<G>+O2<H>,H:NormalSubgroup<G,Op> {
+    const F: fn(QuotientGroup<G,H,Op>,QuotientGroup<G,H,Op>)->QuotientGroup<G,H,Op> = |a, b| {QuotientGroup { representative: a.representative.times(b.representative), h: PhantomData, o: PhantomData }};
+}
+impl<G,H,Op> Monoid<Op> for QuotientGroup<G,H,Op> where G:Group<Op>, Op:O2<G>+O2<H>,H:NormalSubgroup<G,Op> {
+    fn identity() -> Self {
+        QuotientGroup { representative: G::identity(), h: PhantomData, o: PhantomData }
+    }
+}
+impl<G,H,Op> Group<Op> for QuotientGroup<G,H,Op> where G:Group<Op>, Op:O2<G>+O2<H>,H:NormalSubgroup<G,Op> {
+    fn inverse(self)->Self {
+        QuotientGroup { representative: self.representative.inverse(), h: PhantomData, o: PhantomData }
     }
 }
 impl<S,T> Set for (S,T) where S:Set, T:Set {}
