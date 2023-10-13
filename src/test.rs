@@ -1,13 +1,14 @@
-trait Outer<S:Inner> where Self:Bound, S::T:Bound {
-
+trait Outer<S: Inner>
+where
+    Self: Bound,
+    S::T: Bound,
+{
 }
 
 trait Inner {
     type T;
 }
-trait Bound {
-
-}
+trait Bound {}
 
 #[test]
 fn main() {
