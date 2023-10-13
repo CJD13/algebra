@@ -1,4 +1,3 @@
-use core::panic;
 use std::cmp::Ordering;
 use std::fmt::Debug;
 use std::ops::{Mul, Add};
