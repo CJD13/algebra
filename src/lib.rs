@@ -14,8 +14,9 @@ mod tests {
     use crate::{
         operation::i64Plus,
         polynomial::Polynomial,
-        quotient::{Multiples, QuotientGroup},
-        structure::{ring::Ring, group::Group},
+        quotient::{Multiples, QuotientGroup, QuotientRing},
+        structure::{ring::{Ring, i64Ops}, group::Group, monoid::Monoid},
+        set::{Subset},
     };
 
     #[test]
@@ -30,10 +31,13 @@ mod tests {
             println!("{:?}", x.plus(y));
             println!("{:?}", Ring::times(x, y));
             println!("{:?}", f.of(x));
-            type ZMod15 = QuotientGroup<i64, Multiples<15>, i64Plus>;
+            type ZMod15 = QuotientRing<i64,i64Ops,Multiples<15>>;
             let o = ZMod15::from(27);
-            println!("{:?}", Group::pow(o.clone(), 15));
-            println!("{:?}", Group::pow(o, 7));
+            println!("{}",Multiples::<15>::contains(&30));
+            let p = ZMod15::from(2);
+            println!("{:?}", Ring::pow(o.clone(), 20));
+            println!("{:?}",o);
+            println!("{:?}", Ring::pow(p,15));
         };
     }
 }

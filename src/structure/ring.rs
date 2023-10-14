@@ -1,6 +1,6 @@
 use crate::operation::{O2, i64Times, i64Plus};
 
-use super::{group::{Group, Subgroup, AbelianGroup}, monoid::{Monoid, AbsorbingSubmonoid}};
+use super::{group::{Group, Subgroup, AbelianGroup}, monoid::{Monoid, AbsorbingSubset}};
 
 pub trait RingOperations<T>
 where
@@ -33,8 +33,11 @@ where
     fn times_integer(self, other: i64) -> Self {
         Ring::times(self, Group::pow(Self::one(), other))
     }
+    fn pow(self, n:u64)->Self {
+        <Self as Monoid<O::TIMES>>::pow(self, n)
+    }
 }
-pub trait Ideal<R:Ring<O>,O:RingOperations<R>>: Subgroup<R,O::PLUS>+AbsorbingSubmonoid<R,O::TIMES> where O::PLUS:O2<Self>, O::TIMES:O2<Self>{
+pub trait Ideal<R:Ring<O>,O:RingOperations<R>>: Subgroup<R,O::PLUS>+AbsorbingSubset<R,O::TIMES> where O::PLUS:O2<Self>{
     fn reduce(r: R) -> R {
         if Self::contains(&r) {
             R::zero()
@@ -42,9 +45,6 @@ pub trait Ideal<R:Ring<O>,O:RingOperations<R>>: Subgroup<R,O::PLUS>+AbsorbingSub
             r
         }
     }
-}
-impl<R:Ring<O>,O:RingOperations<R>,I:Subgroup<R,O::PLUS>+AbsorbingSubmonoid<R,O::TIMES>> Ideal<R,O> for I where O::PLUS:O2<Self>, O::TIMES:O2<Self>{
-
 }
 
 impl<R, O, S, P> RingOperations<(R, S)> for (O, P)

@@ -1,6 +1,4 @@
-pub trait Subset<T>
-where
-    T: Set,
+pub trait Subset<T:Set>:Set
 {
     /// A subset of `T` is determined by which elements of `T` are members of it.
     fn contains(t: &T) -> bool;
