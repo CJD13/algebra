@@ -31,7 +31,7 @@ mod tests {
             println!("{:?}", Ring::times(x, y));
             println!("{:?}", f.of(x));
             type ZMod15 = QuotientGroup<i64, Multiples<15>, i64Plus>;
-            let o = ZMod15::natural_projection(27);
+            let o = ZMod15::from(27);
             println!("{:?}", Group::pow(o.clone(), 15));
             println!("{:?}", Group::pow(o, 7));
         };

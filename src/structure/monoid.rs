@@ -1,4 +1,4 @@
-use crate::{operation::{O2, i64Times, i64Plus}, set::Set};
+use crate::{operation::{O2, i64Times, i64Plus}, set::{Set, Subset}};
 
 ///Any implementation must guarantee that:
 /// * the multiplication `Operation` is associative, and
@@ -23,13 +23,14 @@ pub trait Monoid<Operation: O2<Self>>: Set {
         Operation::F(self, other)
     }
 }
+pub trait Submonoid<M,O:O2<M>>:Subset<M>+Monoid<O> where M: Monoid<O>,O:O2<Self> {
 
-/*struct ProductTimes<M1,T1:O2<M1>,M2,T2:O2<M2>> where M1:Monoid<T1>, M2:Monoid<T2> {
-    g1:PhantomData<M1>,
-    t1:PhantomData<T1>,
-    g2:PhantomData<M2>,
-    t2:PhantomData<T2>
-}*/
+}
+pub trait AbsorbingSubmonoid<M,O:O2<M>>:Submonoid<M,O> where M: Monoid<O>,O:O2<Self> {
+    //An absorbing submonoid A of M has the property that am is in A for all a in A, m in M
+    //An example is the zero submonoid of the multiplicative monoid of any ring
+}
+
 impl<M1, T1: O2<M1>, M2, T2: O2<M2>> O2<(M1, M2)> for (T1, T2)
 where
     M1: Monoid<T1>,
