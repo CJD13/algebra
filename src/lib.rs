@@ -38,6 +38,15 @@ mod tests {
             println!("{:?}", Ring::pow(o.clone(), 20));
             println!("{:?}",o);
             println!("{:?}", Ring::pow(p,15));
+            type ZMod97 = QuotientRing<i64,i64Ops,Multiples<97>>;
+            let two = ZMod97::from(2);
+            let three = ZMod97::from(3);
+            println!("{:?}", Ring::pow(two.clone(), 16));
+            println!("{:?}", Ring::pow(two.clone(), 24));
+            println!("{:?}", Ring::pow(two, 48));
+            //order of 2 is 48
+            println!("{:?}", Ring::pow(three,48));
+            //3 is a square mod 97
         };
     }
 }
