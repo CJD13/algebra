@@ -1,6 +1,6 @@
 use std::{marker::PhantomData, ops::{Add, Mul}, cmp::Ordering};
 
-use crate::{structure::{ring::{RingOperations, Ring}, group::Group, monoid::Monoid, field::Field}, set::Set, operation::O2, nonzero::NonZero};
+use crate::{structure::{ring::{RingOperations, Ring}, group::Group, monoid::Monoid, field::Field, euclidean_ring::EuclideanRing}, set::Set, operation::O2, nonzero::NonZero};
 
 pub struct Polynomial<R, O: RingOperations<R>>
 where
@@ -337,4 +337,18 @@ where
     O: RingOperations<R>,
     R: Ring<O>,
 {
+}
+impl<F, O> EuclideanRing<PolyOps<F,O>> for Polynomial<F, O>
+where
+    O: RingOperations<F>,
+    F: Field<O>,
+    O::TIMES: O2<NonZero<F, O>>,
+    NonZero<F, O>: Group<O::TIMES>,
+{
+    fn norm(&self) -> Degree {
+        self.degree()
+    }
+    fn divide(self,divisor:Self) -> Self {
+        Polynomial::divide(self,divisor).0
+    }
 }

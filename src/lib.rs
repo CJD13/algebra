@@ -4,7 +4,8 @@ mod polynomial;
 mod quotient;
 mod set;
 mod structure;
-
+mod modular;
+mod wrapper;
 mod test;
 
 #[cfg(test)]
