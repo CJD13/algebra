@@ -15,8 +15,8 @@ mod tests {
     use crate::{
         operation::i64Plus,
         polynomial::Polynomial,
-        quotient::{Multiples, QuotientGroup, QuotientRing},
-        structure::{ring::{Ring, i64Ops}, group::Group, monoid::Monoid},
+        quotient::{ QuotientGroup, QuotientRing, IntMultiples},
+        structure::{ring::{Ring, i64Ops}, group::Group, monoid::Monoid, euclidean_ring::EuclideanRing},
         set::{Subset},
     };
 
@@ -32,14 +32,14 @@ mod tests {
             println!("{:?}", x.plus(y));
             println!("{:?}", Ring::times(x, y));
             println!("{:?}", f.of(x));
-            type ZMod15 = QuotientRing<i64,i64Ops,Multiples<15>>;
+            type ZMod15 = QuotientRing<i64,i64Ops,IntMultiples<15>>;
             let o = ZMod15::from(27);
-            println!("{}",Multiples::<15>::contains(&30));
+            println!("{}",IntMultiples::<15>::contains(&30));
             let p = ZMod15::from(2);
             println!("{:?}", Ring::pow(o.clone(), 20));
             println!("{:?}",o);
             println!("{:?}", Ring::pow(p,15));
-            type ZMod97 = QuotientRing<i64,i64Ops,Multiples<97>>;
+            type ZMod97 = QuotientRing<i64,i64Ops,IntMultiples<97>>;
             let two = ZMod97::from(2);
             let three = ZMod97::from(3);
             println!("{:?}", Ring::pow(two.clone(), 16));
@@ -48,6 +48,7 @@ mod tests {
             //order of 2 is 48
             println!("{:?}", Ring::pow(three,48));
             //3 is a square mod 97
+            println!("{:?}",-5i64.div_euclid(-3))
         };
     }
 }

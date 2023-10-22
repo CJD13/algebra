@@ -5,7 +5,7 @@ use crate::{
     wrapper::{Wrapper}, operation::O2, set::{Set, Subset},
 };
 
-struct Multiples<R:EuclideanRing<O>,O:RingOperations<R>,A:Wrapper<R>> {
+pub struct Multiples<R:EuclideanRing<O>,O:RingOperations<R>,A:Wrapper<R>> {
     data: R,
     o:PhantomData<O>,
     a:PhantomData<A>
@@ -63,5 +63,7 @@ impl<R:EuclideanRing<O>,O:RingOperations<R>,A:Wrapper<R>> AbsorbingSubset<R,O::T
     }
 }
 impl<R:EuclideanRing<O>,O:RingOperations<R>,A:Wrapper<R>> Ideal<R,O> for Multiples<R,O,A> {
-    
+    fn reduce(r: R) -> R {
+        r.remainder(A::Val)
+    }
 }

@@ -8,12 +8,18 @@ pub trait EuclideanRing<O:RingOperations<Self>>:Ring<O> {
     //There is the added requirement that if divisor divides self, then self-q*divisor must equal zero.
     //Division by zero is not defined.
     fn divide(self,divisor:Self) -> Self;
+    fn remainder(self,divisor:Self) -> Self {
+        self.clone().plus(Ring::times(divisor.clone(),self.divide(divisor)).negated())
+    }
 }
 impl EuclideanRing<i64Ops> for i64 {
     fn norm(&self) -> Degree {
         Degree::Integer(self.abs() as usize)
     }
     fn divide(self,divisor:Self) -> Self {
-        self/divisor
+        self.div_euclid(divisor)
+    }
+    fn remainder(self,divisor:Self) -> Self {
+        self%divisor
     }
 }

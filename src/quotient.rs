@@ -7,61 +7,15 @@ use crate::{
     structure::{
         group::{Group, NormalSubgroup, Subgroup},
         monoid::{Monoid, AbsorbingSubset}, ring::{Ideal, RingOperations, Ring, i64Ops},
-    },
+    }, wrapper::Wrapper, modular::Multiples,
 };
 
 #[derive(PartialEq, Eq, Clone)]
-pub struct Multiples<const N: i64> {
-    data: i64,
+pub struct IntWrap<const N: i64> {}
+impl<const N: i64> Wrapper<i64> for IntWrap<N> {
+    const Val: i64 = N;
 }
-impl<const N: i64> O2<Multiples<N>> for i64Plus {
-    const F: fn(Multiples<N>, Multiples<N>) -> Multiples<N> = |a, b| Multiples {
-        data: a.data + b.data,
-    };
-}
-impl<const N: i64> Set for Multiples<N> {}
-impl<const N: i64> Subset<i64> for Multiples<N> {
-    fn contains(t: &i64) -> bool {
-        t % N == 0
-    }
-    fn inclusion(self) -> i64 {
-        self.data
-    }
-    fn try_from(t: i64) -> Self {
-        if Self::contains(&t) {
-            Self { data: t }
-        } else {
-            panic!()
-        }
-    }
-}
-impl<const N: i64> Monoid<i64Plus> for Multiples<N> {
-    fn identity() -> Self {
-        Self { data: 0 }
-    }
-}
-impl<const N: i64> Group<i64Plus> for Multiples<N> {
-    fn inverse(self) -> Self {
-        Self { data: -self.data }
-    }
-}
-impl<const N: i64> Subgroup<i64, i64Plus> for Multiples<N> {}
-impl<const N: i64> NormalSubgroup<i64, i64Plus> for Multiples<N> {
-    fn reduce(g: i64) -> i64 {
-        g % N
-    }
-}
-
-impl<const N: i64> AbsorbingSubset<i64,i64Times> for Multiples<N> {
-    fn times(self, m:i64) -> Self {
-        Self { data: self.data*m }
-    }
-}
-impl<const N: i64> Ideal<i64,i64Ops> for Multiples<N> {
-    fn reduce(r: i64) -> i64 {
-        r%N
-    }
-}
+pub type IntMultiples<const N:i64>=Multiples<i64,i64Ops,IntWrap<N>>;
 pub struct QuotientGroup<G, H, Op>
 where
     G: Group<Op>,
