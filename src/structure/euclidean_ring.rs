@@ -11,6 +11,23 @@ pub trait EuclideanRing<O:RingOperations<Self>>:Ring<O> {
     fn remainder(self,divisor:Self) -> Self {
         self.clone().plus(Ring::times(divisor.clone(),self.divide(divisor)).negated())
     }
+    //Returns x and y such that ax+by=gcd(a,b)
+    fn bézout(a:Self,b:Self)->(Self,Self){
+        if b==Self::zero() {
+            (Self::one(),Self::zero())
+        } else {
+            let q = a.clone().divide(b.clone());
+            let (x,y)=Self::bézout(b.clone(),a.plus(Ring::times(q.clone(), b).negated()));
+            (y.clone(),x.plus(Ring::times(q, y).negated()))
+        }
+    }
+    fn gcd(a:Self,b:Self) -> Self {
+        if b==Self::zero() {
+            a
+        } else {
+            Self::gcd(b.clone(),a.remainder(b))
+        }
+    }
 }
 impl EuclideanRing<i64Ops> for i64 {
     fn norm(&self) -> Degree {
