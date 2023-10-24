@@ -1,6 +1,6 @@
 use std::{marker::PhantomData, ops::{Add, Mul}, cmp::Ordering};
 
-use crate::{structure::{ring::{RingOperations, Ring}, group::Group, monoid::Monoid, field::Field, euclidean_ring::EuclideanRing}, set::Set, operation::O2, nonzero::NonZero};
+use crate::{structure::{ring::{RingOperations, Ring}, group::Group, monoid::Monoid, field::Field, euclidean_ring::EuclideanRing}, set::Set, operation::O2, nonzero::NonZero, unit::TryInverse};
 
 pub struct Polynomial<R, O: RingOperations<R>>
 where
@@ -181,23 +181,20 @@ where
         }
     }
 }
-impl<F, O> Polynomial<F, O>
-where
-    O: RingOperations<F>,
-    F: Field<O>,
-    O::TIMES: O2<NonZero<F, O>>,
-    NonZero<F, O>: Group<O::TIMES>,
+impl<R:Ring<O>, O:RingOperations<R>> Polynomial<R, O>
+where R:TryInverse<O>
 {
-    /// Panics if the divisor is zero
+    /// The leading coefficient of the divisor must be a unir.
+    /// Panics if this is not the case.
     fn divide(mut dividend: Self, divisor: Self) -> (Self, Self) {
         let n = divisor.degree().unwrap();
-        let i = divisor.lead_coeff().reciprocal();
+        let i = divisor.lead_coeff().try_inverse().unwrap();
         let mut quotient = Self::zero();
         while dividend.degree() >= divisor.degree() {
             let m = dividend.degree().unwrap();
             let term = 
                 Self::constant(dividend.lead_coeff().times( i.clone())).times(
-                Monoid::<PTIMES<F, O>>::pow(Self::x(), (m - n) as u64),
+                Monoid::<PTIMES<R, O>>::pow(Self::x(), (m - n) as u64),
             );
             quotient = quotient + term.clone();
             dividend = dividend + (divisor.clone() * term).negated();
