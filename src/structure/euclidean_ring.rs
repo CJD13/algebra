@@ -1,6 +1,7 @@
-use crate::{operation::{O2, i64Times, i64Plus}, polynomial::Degree};
 
-use super::{group::{Group, Subgroup, AbelianGroup}, monoid::{Monoid, AbsorbingSubset}, ring::{Ring, RingOperations, i64Ops}};
+use crate::{operation::{O2, i64Times, i64Plus}, polynomial::Degree, nonzero::NonZero};
+
+use super::{group::{Group, Subgroup, AbelianGroup}, monoid::{Monoid, AbsorbingSubset}, ring::{Ring, RingOperations, i64Ops}, field::Field};
 pub trait EuclideanRing<O:RingOperations<Self>>:Ring<O> {
     //The Euclidean norm of the ring.
     fn norm(&self) -> Degree;
@@ -27,6 +28,18 @@ pub trait EuclideanRing<O:RingOperations<Self>>:Ring<O> {
         } else {
             Self::gcd(b.clone(),a.remainder(b))
         }
+    }
+}
+impl<F:Field<O>,O:RingOperations<F>> EuclideanRing<O> for F where O::TIMES: O2<NonZero<F, O>>,NonZero<Self, O>: Group<O::TIMES>{
+    fn norm(&self) -> Degree {
+        if self==&F::zero(){
+            Degree::NegInfty
+        } else {
+            Degree::Integer(0)
+        }
+    }
+    fn divide(self,divisor:Self) -> Self {
+        self.times(Field::inverse(divisor))
     }
 }
 impl EuclideanRing<i64Ops> for i64 {
