@@ -7,7 +7,7 @@ mod structure;
 mod modular;
 mod wrapper;
 mod test;
-
+mod units;
 #[cfg(test)]
 mod tests {
     use std::marker::PhantomData;

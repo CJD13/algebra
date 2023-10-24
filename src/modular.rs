@@ -5,7 +5,7 @@ use crate::{
     wrapper::{Wrapper}, operation::O2, set::{Set, Subset},
 };
 
-pub struct Multiples<R:EuclideanRing<O>,O:RingOperations<R>,A:Wrapper<R>> {
+pub struct Multiples<R:Ring<O>,O:RingOperations<R>,A:Wrapper<R>> {
     data: R,
     o:PhantomData<O>,
     a:PhantomData<A>
