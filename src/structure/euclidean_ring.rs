@@ -41,6 +41,9 @@ impl<F:Field<O>,O:RingOperations<F>> EuclideanRing<O> for F where O::TIMES: O2<N
     fn divide(self,divisor:Self) -> Self {
         self.times(Field::inverse(divisor))
     }
+    fn remainder(self,divisor:Self) -> Self {
+        Self::zero()
+    }
 }
 impl EuclideanRing<i64Ops> for i64 {
     fn norm(&self) -> Degree {
