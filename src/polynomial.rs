@@ -135,7 +135,7 @@ where
             for j in 0..=i {
                 s = Ring::plus(
                     s,
-                    Ring::times(self.coefficient(j), other.coefficient(i - j)),
+                    self.coefficient(j).times( other.coefficient(i - j)),
                 );
             }
             res.push(s);
@@ -166,8 +166,8 @@ where
         let mut res = R::zero();
         let mut xPower = R::one();
         while self.degree() >= n {
-            res = res.plus(Ring::times(self.coefficient(n), xPower.clone()));
-            xPower = Ring::times(xPower, x.clone());
+            res = res.plus(self.coefficient(n).times( xPower.clone()));
+            xPower = xPower.times( x.clone());
             n += 1;
         }
         res
@@ -195,8 +195,8 @@ where
         let mut quotient = Self::zero();
         while dividend.degree() >= divisor.degree() {
             let m = dividend.degree().unwrap();
-            let term = Ring::times(
-                Self::constant(Ring::times(dividend.lead_coeff(), i.clone())),
+            let term = 
+                Self::constant(dividend.lead_coeff().times( i.clone())).times(
                 Monoid::<PTIMES<F, O>>::pow(Self::x(), (m - n) as u64),
             );
             quotient = quotient + term.clone();

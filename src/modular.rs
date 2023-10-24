@@ -28,7 +28,7 @@ impl<R:EuclideanRing<O>,O:RingOperations<R>,A:Wrapper<R>> Set for Multiples<R,O,
 }
 impl<R:EuclideanRing<O>,O:RingOperations<R>,A:Wrapper<R>> Subset<R> for Multiples<R,O,A> {
     fn contains(t: &R) -> bool {
-        t==&Ring::times(t.clone().divide(A::Val),A::Val)
+        t==&t.clone().divide(A::Val).times(A::Val)
     }
     fn inclusion(self) -> R {
         self.data
@@ -59,7 +59,7 @@ impl<R:EuclideanRing<O>,O:RingOperations<R>,A:Wrapper<R>> Subgroup<R,O::PLUS> fo
 }
 impl<R:EuclideanRing<O>,O:RingOperations<R>,A:Wrapper<R>> AbsorbingSubset<R,O::TIMES> for Multiples<R,O,A> {
     fn times(self, m:R) -> Self {
-        Self { data: Ring::times(self.data,m), o: PhantomData, a: PhantomData }
+        Self { data: self.data.times(m), o: PhantomData, a: PhantomData }
     }
 }
 impl<R:EuclideanRing<O>,O:RingOperations<R>,A:Wrapper<R>> Ideal<R,O> for Multiples<R,O,A> {

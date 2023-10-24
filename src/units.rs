@@ -8,7 +8,7 @@ pub struct Unit<R:Ring<O>,O:RingOperations<R>> {
     o:PhantomData<O>
 }
 impl<R:Ring<O>,O:RingOperations<R>> O2<Unit<R,O>> for O::TIMES {
-    const F: fn(Unit<R,O>, Unit<R,O>) -> Unit<R,O> = |a,b| Unit { u: Ring::times(a.u,b.u), u_inverse: Ring::times(b.u_inverse, a.u_inverse), o: PhantomData };
+    const F: fn(Unit<R,O>, Unit<R,O>) -> Unit<R,O> = |a,b| Unit { u: a.u.times(b.u), u_inverse: b.u_inverse.times(a.u_inverse), o: PhantomData };
 }
 impl<R:Ring<O>,O:RingOperations<R>> PartialEq for Unit<R,O> {
     fn eq(&self, other: &Self) -> bool {

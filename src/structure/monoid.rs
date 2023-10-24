@@ -19,7 +19,7 @@ pub trait Monoid<Operation: O2<Self>>: Set {
         let i = self.pow( n / 2);
         Operation::F(rem, Operation::F(i.clone(), i))
     }
-    fn times(self, other: Self) -> Self {
+    fn star(self, other: Self) -> Self {
         Operation::F(self, other)
     }
 }
@@ -31,7 +31,7 @@ pub trait AbsorbingSubset<M,O:O2<M>>:Subset<M> where M: Monoid<O>{
     //An example is the zero subset of the multiplicative monoid of any ring
     //implementations must guarantee that the try_from never panics
     fn times(self, m:M) -> Self {
-        Self::try_from(self.inclusion().times(m))
+        Self::try_from(self.inclusion().star(m))
     }
 }
 
@@ -40,7 +40,7 @@ where
     M1: Monoid<T1>,
     M2: Monoid<T2>,
 {
-    const F: fn((M1, M2), (M1, M2)) -> (M1, M2) = |(m1, m2), (m3, m4)| (m1.times(m3), m2.times(m4));
+    const F: fn((M1, M2), (M1, M2)) -> (M1, M2) = |(m1, m2), (m3, m4)| (m1.star(m3), m2.star(m4));
 }
 
 impl<M1, T1: O2<M1>, M2, T2: O2<M2>> Monoid<(T1, T2)> for (M1, M2)

@@ -9,7 +9,7 @@ pub trait EuclideanRing<O:RingOperations<Self>>:Ring<O> {
     //Division by zero is not defined.
     fn divide(self,divisor:Self) -> Self;
     fn remainder(self,divisor:Self) -> Self {
-        self.clone().plus(Ring::times(divisor.clone(),self.divide(divisor)).negated())
+        self.clone().plus(divisor.clone().times(self.divide(divisor)).negated())
     }
     //Returns x and y such that ax+by=gcd(a,b)
     fn bézout(a:Self,b:Self)->(Self,Self){
@@ -17,8 +17,8 @@ pub trait EuclideanRing<O:RingOperations<Self>>:Ring<O> {
             (Self::one(),Self::zero())
         } else {
             let q = a.clone().divide(b.clone());
-            let (x,y)=Self::bézout(b.clone(),a.plus(Ring::times(q.clone(), b).negated()));
-            (y.clone(),x.plus(Ring::times(q, y).negated()))
+            let (x,y)=Self::bézout(b.clone(),a.plus(q.clone().times(b).negated()));
+            (y.clone(),x.plus(q.times( y).negated()))
         }
     }
     fn gcd(a:Self,b:Self) -> Self {

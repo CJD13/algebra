@@ -30,7 +30,7 @@ mod tests {
                 o: PhantomData,
             };
             println!("{:?}", x.plus(y));
-            println!("{:?}", Ring::times(x, y));
+            println!("{:?}", x.times( y));
             println!("{:?}", f.of(x));
             type ZMod15 = QuotientRing<i64,i64Ops,IntMultiples<15>>;
             let o = ZMod15::from(27);

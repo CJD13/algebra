@@ -47,7 +47,7 @@ where
             &self
                 .representative
                 .clone()
-                .times(other.representative.clone().inverse()),
+                .star(other.representative.clone().inverse()),
         )
     }
 }
@@ -72,7 +72,7 @@ where
     H: NormalSubgroup<G, Op>,
 {
     const F: fn(QuotientGroup<G, H, Op>, QuotientGroup<G, H, Op>) -> QuotientGroup<G, H, Op> =
-        |a, b| QuotientGroup::from(a.representative.times(b.representative));
+        |a, b| QuotientGroup::from(a.representative.star(b.representative));
 }
 impl<G, H, Op> Monoid<Op> for QuotientGroup<G, H, Op>
 where
@@ -160,7 +160,7 @@ impl<R:Ring<O>,O:RingOperations<R>,I:Ideal<R,O>> O2<QuotientRing<R,O,I>> for Quo
     const F: fn(QuotientRing<R,O,I>, QuotientRing<R,O,I>) -> QuotientRing<R,O,I> = |a,b| QuotientRing::from(a.representative.plus(b.representative));
 }
 impl<R:Ring<O>,O:RingOperations<R>,I:Ideal<R,O>> O2<QuotientRing<R,O,I>> for QuotientProduct<O::TIMES> where O::PLUS:O2<I>{
-    const F: fn(QuotientRing<R,O,I>, QuotientRing<R,O,I>) -> QuotientRing<R,O,I> = |a,b| QuotientRing::from(Ring::times(a.representative,b.representative));
+    const F: fn(QuotientRing<R,O,I>, QuotientRing<R,O,I>) -> QuotientRing<R,O,I> = |a,b| QuotientRing::from(a.representative.times(b.representative));
 }
 impl<R:Ring<O>,O:RingOperations<R>,I:Ideal<R,O>> Monoid<QuotientSum<O::PLUS>> for QuotientRing<R,O,I> where O::PLUS:O2<I>{
     fn identity() -> Self {

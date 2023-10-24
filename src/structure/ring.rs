@@ -30,8 +30,8 @@ where
     fn times(self, other: Self) -> Self {
         O::TIMES::F(self, other)
     }
-    fn times_integer(self, other: i64) -> Self {
-        Ring::times(self, Group::pow(Self::one(), other))
+    fn from_integer(n: u64) -> Self {
+        Monoid::<O::PLUS>::pow(Self::one(),n)
     }
     fn pow(self, n:u64)->Self {
         <Self as Monoid<O::TIMES>>::pow(self, n)
