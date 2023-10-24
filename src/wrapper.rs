@@ -1,3 +1,3 @@
 pub trait Wrapper<T> {
-    const Val: T;
+    const VAL: T;
 }
