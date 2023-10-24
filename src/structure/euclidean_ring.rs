@@ -39,7 +39,7 @@ impl<F:Field<O>,O:RingOperations<F>> EuclideanRing<O> for F where O::TIMES: O2<N
         }
     }
     fn divide(self,divisor:Self) -> Self {
-        self.times(Field::inverse(divisor))
+        self.times(divisor.reciprocal())
     }
     fn remainder(self,divisor:Self) -> Self {
         Self::zero()

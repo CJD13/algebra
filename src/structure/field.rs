@@ -12,7 +12,7 @@ where
     NonZero<Self, O>: Group<O::TIMES>,
 {
     /// Multiplicative inverse. Panics if given zero.
-    fn inverse(self) -> Self {
+    fn reciprocal(self) -> Self {
         <NonZero<Self, O> as Subset<Self>>::try_from(self)
             .inverse()
             .inclusion()

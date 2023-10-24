@@ -191,7 +191,7 @@ where
     /// Panics if the divisor is zero
     fn divide(mut dividend: Self, divisor: Self) -> (Self, Self) {
         let n = divisor.degree().unwrap();
-        let i = Field::inverse(divisor.lead_coeff());
+        let i = divisor.lead_coeff().reciprocal();
         let mut quotient = Self::zero();
         while dividend.degree() >= divisor.degree() {
             let m = dividend.degree().unwrap();
