@@ -1,6 +1,6 @@
 use std::{marker::PhantomData, ops::{Add, Mul}, cmp::Ordering};
 
-use crate::{structure::{ring::{RingOperations, Ring}, group::Group, monoid::Monoid, field::Field, euclidean_ring::EuclideanRing}, set::Set, operation::O2, nonzero::NonZero, unit::TryInverse};
+use crate::{structure::{ring::{RingOperations, Ring, i64Ops, Ideal}, group::{Group, Subgroup}, monoid::{Monoid, AbsorbingSubset}, field::Field, euclidean_ring::EuclideanRing}, set::{Set, Subset}, operation::O2, nonzero::NonZero, unit::TryInverse, wrapper::Wrapper, modular::Multiples, quotient::QuotientRing};
 
 pub struct Polynomial<R, O: RingOperations<R>>
 where
@@ -184,7 +184,7 @@ where
 impl<R:Ring<O>, O:RingOperations<R>> Polynomial<R, O>
 where R:TryInverse<O>
 {
-    /// The leading coefficient of the divisor must be a unir.
+    /// The leading coefficient of the divisor must be a unit.
     /// Panics if this is not the case.
     fn divide(mut dividend: Self, divisor: Self) -> (Self, Self) {
         let n = divisor.degree().unwrap();
@@ -349,3 +349,34 @@ where
         Polynomial::divide(self,divisor).0
     }
 }
+impl<P:Wrapper<Polynomial<i64,i64Ops>>> Subset<Polynomial<i64,i64Ops>> for Multiples<Polynomial<i64,i64Ops>,PolyOps<i64,i64Ops>,P> {
+    fn contains(t: &Polynomial<i64,i64Ops>) -> bool {
+        Polynomial::divide(t.clone(), P::VAL()).1==Polynomial::zero()
+    }
+    fn inclusion(self) -> Polynomial<i64,i64Ops> {
+        self.data
+    }
+    fn try_from(t: Polynomial<i64,i64Ops>) -> Self {
+        if Self::contains(&t) {
+            Self {data: t,o:PhantomData,a:PhantomData}
+        } else {
+            panic!()
+        }
+    }
+}
+impl<P:Wrapper<Polynomial<i64,i64Ops>>> Subgroup<Polynomial<i64,i64Ops>,PPLUS<i64,i64Ops>> for Multiples<Polynomial<i64,i64Ops>,PolyOps<i64,i64Ops>,P> {
+    
+}
+impl<P:Wrapper<Polynomial<i64,i64Ops>>> AbsorbingSubset<Polynomial<i64,i64Ops>,PTIMES<i64,i64Ops>> for Multiples<Polynomial<i64,i64Ops>,PolyOps<i64,i64Ops>,P> {
+    
+}
+
+impl<P:Wrapper<Polynomial<i64,i64Ops>>> Ideal<Polynomial<i64,i64Ops>,PolyOps<i64,i64Ops>> for Multiples<Polynomial<i64,i64Ops>,PolyOps<i64,i64Ops>,P> {
+    
+}
+type i64AdjX=Polynomial<i64,i64Ops>;
+struct XSquaredPlus1;
+impl Wrapper<i64AdjX> for XSquaredPlus1 {
+    const VAL: fn()->i64AdjX = || i64AdjX::x().times(i64AdjX::x()).plus(i64AdjX::one());
+}
+type GaussianI64=QuotientRing<i64AdjX,PolyOps<i64,i64Ops>,Multiples<i64AdjX,PolyOps<i64,i64Ops>,XSquaredPlus1>>;

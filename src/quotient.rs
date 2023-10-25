@@ -13,7 +13,7 @@ use crate::{
 #[derive(PartialEq, Eq, Clone)]
 pub struct IntWrap<const N: i64> {}
 impl<const N: i64> Wrapper<i64> for IntWrap<N> {
-    const VAL: i64 = N;
+    const VAL: fn()->i64 = || N;
 }
 pub type IntMultiples<const N:i64>=Multiples<i64,i64Ops,IntWrap<N>>;
 pub struct QuotientGroup<G, H, Op>
