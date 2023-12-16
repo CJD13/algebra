@@ -6,7 +6,7 @@ use crate::{
     set::{Set, Subset},
     structure::{
         group::{Group, NormalSubgroup, Subgroup},
-        monoid::{Monoid, AbsorbingSubset}, ring::{Ideal, RingOperations, Ring, i64Ops},
+        monoid::{Monoid, AbsorbingSubset}, ring::{Ideal, RingOperations, Ring, StandardOps},
     }, wrapper::Wrapper, modular::Multiples,
 };
 
@@ -15,7 +15,7 @@ pub struct IntWrap<const N: i64> {}
 impl<const N: i64> Wrapper<i64> for IntWrap<N> {
     const VAL: fn()->i64 = || N;
 }
-pub type IntMultiples<const N:i64>=Multiples<i64,i64Ops,IntWrap<N>>;
+pub type IntMultiples<const N:i64>=Multiples<i64,StandardOps,IntWrap<N>>;
 pub struct QuotientGroup<G, H, Op>
 where
     G: Group<Op>,

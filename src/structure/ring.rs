@@ -81,9 +81,9 @@ where
     p:PhantomData<P>
 }*/
 
-pub struct i64Ops {}
-impl RingOperations<i64> for i64Ops {
+pub struct StandardOps {}
+impl RingOperations<i64> for StandardOps {
     type PLUS = Plus;
     type TIMES = Times;
 }
-impl Ring<i64Ops> for i64 {}
+impl Ring<StandardOps> for i64 {}

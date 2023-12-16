@@ -1,5 +1,5 @@
 use std::{marker::PhantomData, ops::{Add, Mul}, cmp::Ordering};
-use crate::{structure::{ring::{RingOperations, Ring, i64Ops, Ideal}, group::{Group, Subgroup}, monoid::{Monoid, AbsorbingSubset}, field::Field, euclidean_ring::EuclideanRing}, set::{Set, Subset}, operation::O2, nonzero::NonZero, unit::TryInverse, wrapper::Wrapper, modular::Multiples, quotient::QuotientRing};
+use crate::{structure::{ring::{RingOperations, Ring, StandardOps, Ideal}, group::{Group, Subgroup}, monoid::{Monoid, AbsorbingSubset}, field::Field, euclidean_ring::EuclideanRing}, set::{Set, Subset}, operation::O2, nonzero::NonZero, unit::TryInverse, wrapper::Wrapper, modular::Multiples, quotient::QuotientRing};
 use take_mut::take;
 pub struct Polynomial<R, O: RingOperations<R>>
 where
@@ -359,14 +359,14 @@ where
         Self::divide(self, divisor).1
     }
 }
-impl<P:Wrapper<Polynomial<i64,i64Ops>>> Subset<Polynomial<i64,i64Ops>> for Multiples<Polynomial<i64,i64Ops>,PolyOps<i64,i64Ops>,P> {
-    fn contains(t: &Polynomial<i64,i64Ops>) -> bool {
+impl<P:Wrapper<Polynomial<i64,StandardOps>>> Subset<Polynomial<i64,StandardOps>> for Multiples<Polynomial<i64,StandardOps>,PolyOps<i64,StandardOps>,P> {
+    fn contains(t: &Polynomial<i64,StandardOps>) -> bool {
         Polynomial::divide(t.clone(), &P::VAL()).1==Polynomial::zero()
     }
-    fn inclusion(self) -> Polynomial<i64,i64Ops> {
+    fn inclusion(self) -> Polynomial<i64,StandardOps> {
         self.data
     }
-    fn try_from(t: Polynomial<i64,i64Ops>) -> Self {
+    fn try_from(t: Polynomial<i64,StandardOps>) -> Self {
         if Self::contains(&t) {
             Self {data: t,o:PhantomData,a:PhantomData}
         } else {
@@ -374,19 +374,19 @@ impl<P:Wrapper<Polynomial<i64,i64Ops>>> Subset<Polynomial<i64,i64Ops>> for Multi
         }
     }
 }
-impl<P:Wrapper<Polynomial<i64,i64Ops>>> Subgroup<Polynomial<i64,i64Ops>,PPLUS<i64,i64Ops>> for Multiples<Polynomial<i64,i64Ops>,PolyOps<i64,i64Ops>,P> {
+impl<P:Wrapper<Polynomial<i64,StandardOps>>> Subgroup<Polynomial<i64,StandardOps>,PPLUS<i64,StandardOps>> for Multiples<Polynomial<i64,StandardOps>,PolyOps<i64,StandardOps>,P> {
     
 }
-impl<P:Wrapper<Polynomial<i64,i64Ops>>> AbsorbingSubset<Polynomial<i64,i64Ops>,PTIMES<i64,i64Ops>> for Multiples<Polynomial<i64,i64Ops>,PolyOps<i64,i64Ops>,P> {
+impl<P:Wrapper<Polynomial<i64,StandardOps>>> AbsorbingSubset<Polynomial<i64,StandardOps>,PTIMES<i64,StandardOps>> for Multiples<Polynomial<i64,StandardOps>,PolyOps<i64,StandardOps>,P> {
     
 }
 
-impl<P:Wrapper<Polynomial<i64,i64Ops>>> Ideal<Polynomial<i64,i64Ops>,PolyOps<i64,i64Ops>> for Multiples<Polynomial<i64,i64Ops>,PolyOps<i64,i64Ops>,P> {
+impl<P:Wrapper<Polynomial<i64,StandardOps>>> Ideal<Polynomial<i64,StandardOps>,PolyOps<i64,StandardOps>> for Multiples<Polynomial<i64,StandardOps>,PolyOps<i64,StandardOps>,P> {
     
 }
-type i64AdjX=Polynomial<i64,i64Ops>;
+type i64AdjX=Polynomial<i64,StandardOps>;
 struct XSquaredPlus1;
 impl Wrapper<i64AdjX> for XSquaredPlus1 {
     const VAL: fn()->i64AdjX = || i64AdjX::x().times(&i64AdjX::x()).plus(&i64AdjX::one());
 }
-type GaussianI64=QuotientRing<i64AdjX,PolyOps<i64,i64Ops>,Multiples<i64AdjX,PolyOps<i64,i64Ops>,XSquaredPlus1>>;
+type GaussianI64=QuotientRing<i64AdjX,PolyOps<i64,StandardOps>,Multiples<i64AdjX,PolyOps<i64,StandardOps>,XSquaredPlus1>>;
