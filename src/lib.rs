@@ -8,12 +8,13 @@ mod modular;
 mod wrapper;
 mod test;
 mod unit;
+extern crate take_mut;
 #[cfg(test)]
 mod tests {
     use std::marker::PhantomData;
 
     use crate::{
-        operation::i64Plus,
+        operation::Plus,
         polynomial::Polynomial,
         quotient::{ QuotientGroup, QuotientRing, IntMultiples},
         structure::{ring::{Ring, i64Ops}, group::Group, monoid::Monoid, euclidean_ring::EuclideanRing},
@@ -29,8 +30,8 @@ mod tests {
                 coefficients: vec![(1, 0), (2, 1), (-1, 3)],
                 o: PhantomData,
             };
-            println!("{:?}", x.plus(y));
-            println!("{:?}", x.times( y));
+            println!("{:?}", x.plus(&y));
+            println!("{:?}", x.times(&y));
             println!("{:?}", f.of(x));
             type ZMod15 = QuotientRing<i64,i64Ops,IntMultiples<15>>;
             let o = ZMod15::from(27);

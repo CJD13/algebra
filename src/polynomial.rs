@@ -1,7 +1,6 @@
 use std::{marker::PhantomData, ops::{Add, Mul}, cmp::Ordering};
-
 use crate::{structure::{ring::{RingOperations, Ring, i64Ops, Ideal}, group::{Group, Subgroup}, monoid::{Monoid, AbsorbingSubset}, field::Field, euclidean_ring::EuclideanRing}, set::{Set, Subset}, operation::O2, nonzero::NonZero, unit::TryInverse, wrapper::Wrapper, modular::Multiples, quotient::QuotientRing};
-
+use take_mut::take;
 pub struct Polynomial<R, O: RingOperations<R>>
 where
     R: Ring<O>,
@@ -112,21 +111,19 @@ where
             R::zero()
         }
     }
-    fn add(self, other: Self) -> Self {
-        let l = Degree::max(self.degree(), other.degree());
-        let mut data = vec![];
-        let mut n = 0;
-        while l >= n {
-            data.push(Ring::plus(self.coefficient(n), other.coefficient(n)));
-            n += 1;
+    fn add(mut self, other: &Self) -> Self {
+        if self.degree()<other.degree() {
+            return Self::add(other.clone(),&self)
         }
-        data = Self::trim_zeros(data);
-        Polynomial {
-            coefficients: data,
-            o: PhantomData,
+        let mut l = 0;
+        while other.degree()>=l {
+            take(&mut self.coefficients[l],|c| c.plus(&other.coefficients[l]));
+            l+=1;
         }
+        self.coefficients=Self::trim_zeros(self.coefficients);
+        self
     }
-    fn mul(self, other: Self) -> Self {
+    fn mul(self, other: &Self) -> Self {
         let l = self.degree() + other.degree();
         let mut res = vec![];
         let mut i = 0;
@@ -135,7 +132,7 @@ where
             for j in 0..=i {
                 s = Ring::plus(
                     s,
-                    self.coefficient(j).times( other.coefficient(i - j)),
+                    &self.coefficient(j).times( &other.coefficient(i - j)),
                 );
             }
             res.push(s);
@@ -166,8 +163,8 @@ where
         let mut res = R::zero();
         let mut xPower = R::one();
         while self.degree() >= n {
-            res = res.plus(self.coefficient(n).times( xPower.clone()));
-            xPower = xPower.times( x.clone());
+            res = res.plus(&self.coefficient(n).times( &xPower));
+            xPower = xPower.times( &x);
             n += 1;
         }
         res
@@ -180,22 +177,29 @@ where
             Degree::NegInfty => panic!(),
         }
     }
+    fn x_pow(n:usize) -> Self{
+        let mut data = Vec::with_capacity(n+1);
+        for _ in 0..n {
+            data.push(R::zero());
+        }
+        data.push(R::one());
+        Polynomial { coefficients: data, o: PhantomData }
+    }
 }
 impl<R:Ring<O>, O:RingOperations<R>> Polynomial<R, O>
 where R:TryInverse<O>
 {
     /// The leading coefficient of the divisor must be a unit.
     /// Panics if this is not the case.
-    fn divide(mut dividend: Self, divisor: Self) -> (Self, Self) {
+    fn divide(mut dividend: Self, divisor: &Self) -> (Self, Self) {
         let n = divisor.degree().unwrap();
         let i = divisor.lead_coeff().try_inverse().unwrap();
         let mut quotient = Self::zero();
         while dividend.degree() >= divisor.degree() {
             let m = dividend.degree().unwrap();
             let term = 
-                Self::constant(dividend.lead_coeff().times( i.clone())).times(
-                Monoid::<PTIMES<R, O>>::pow(Self::x(), (m - n) as u64),
-            );
+                Self::constant(dividend.lead_coeff().times(&i)).times(
+                &Self::x_pow(m - n));
             quotient = quotient + term.clone();
             dividend = dividend + (divisor.clone() * term).negated();
         }
@@ -209,7 +213,7 @@ where
 {
     type Output = Self;
     fn add(self, rhs: Self) -> Self::Output {
-        self.add(rhs)
+        self.add(&rhs)
     }
 }
 impl<R, O> Mul<Polynomial<R, O>> for Polynomial<R, O>
@@ -219,7 +223,7 @@ where
 {
     type Output = Self;
     fn mul(self, rhs: Polynomial<R, O>) -> Self::Output {
-        self.mul(rhs)
+        self.mul(&rhs)
     }
 }
 struct PPLUS<R, O>
@@ -243,14 +247,14 @@ where
     O: RingOperations<R>,
     R: Ring<O>,
 {
-    const F: fn(Polynomial<R, O>, Polynomial<R, O>) -> Polynomial<R, O> = <Polynomial<R, O>>::add;
+    const F: fn(Polynomial<R, O>, &Polynomial<R, O>) -> Polynomial<R, O> = <Polynomial<R, O>>::add;
 }
 impl<R, O> O2<Polynomial<R, O>> for PTIMES<R, O>
 where
     O: RingOperations<R>,
     R: Ring<O>,
 {
-    const F: fn(Polynomial<R, O>, Polynomial<R, O>) -> Polynomial<R, O> = <Polynomial<R, O>>::mul;
+    const F: fn(Polynomial<R, O>, &Polynomial<R, O>) -> Polynomial<R, O> = <Polynomial<R, O>>::mul;
 }
 
 impl<R, O> PartialEq for Polynomial<R, O>
@@ -345,13 +349,19 @@ where
     fn norm(&self) -> Degree {
         self.degree()
     }
-    fn divide(self,divisor:Self) -> Self {
+    fn quotient(self,divisor:&Self) -> Self {
         Polynomial::divide(self,divisor).0
+    }
+    fn divide(self, divisor:&Self) -> (Self,Self) {
+        Self::divide(self, divisor)
+    }
+    fn remainder(self,divisor:&Self) -> Self {
+        Self::divide(self, divisor).1
     }
 }
 impl<P:Wrapper<Polynomial<i64,i64Ops>>> Subset<Polynomial<i64,i64Ops>> for Multiples<Polynomial<i64,i64Ops>,PolyOps<i64,i64Ops>,P> {
     fn contains(t: &Polynomial<i64,i64Ops>) -> bool {
-        Polynomial::divide(t.clone(), P::VAL()).1==Polynomial::zero()
+        Polynomial::divide(t.clone(), &P::VAL()).1==Polynomial::zero()
     }
     fn inclusion(self) -> Polynomial<i64,i64Ops> {
         self.data
@@ -377,6 +387,6 @@ impl<P:Wrapper<Polynomial<i64,i64Ops>>> Ideal<Polynomial<i64,i64Ops>,PolyOps<i64
 type i64AdjX=Polynomial<i64,i64Ops>;
 struct XSquaredPlus1;
 impl Wrapper<i64AdjX> for XSquaredPlus1 {
-    const VAL: fn()->i64AdjX = || i64AdjX::x().times(i64AdjX::x()).plus(i64AdjX::one());
+    const VAL: fn()->i64AdjX = || i64AdjX::x().times(&i64AdjX::x()).plus(&i64AdjX::one());
 }
 type GaussianI64=QuotientRing<i64AdjX,PolyOps<i64,i64Ops>,Multiples<i64AdjX,PolyOps<i64,i64Ops>,XSquaredPlus1>>;

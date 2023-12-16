@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 use std::fmt::Debug;
 
 use crate::{
-    operation::{i64Plus, O2, i64Times},
+    operation::{Plus, O2, Times},
     set::{Set, Subset},
     structure::{
         group::{Group, NormalSubgroup, Subgroup},
@@ -46,8 +46,8 @@ where
         H::contains(
             &self
                 .representative
-                .clone()
-                .star(other.representative.clone().inverse()),
+                .clone().inverse()
+                .star(&other.representative),
         )
     }
 }
@@ -71,8 +71,8 @@ where
     Op: O2<G> + O2<H>,
     H: NormalSubgroup<G, Op>,
 {
-    const F: fn(QuotientGroup<G, H, Op>, QuotientGroup<G, H, Op>) -> QuotientGroup<G, H, Op> =
-        |a, b| QuotientGroup::from(a.representative.star(b.representative));
+    const F: fn(QuotientGroup<G, H, Op>, &QuotientGroup<G, H, Op>) -> QuotientGroup<G, H, Op> =
+        |a, b| QuotientGroup::from(a.representative.star(&b.representative));
 }
 impl<G, H, Op> Monoid<Op> for QuotientGroup<G, H, Op>
 where
@@ -137,7 +137,7 @@ impl<R:Ring<O>,O:RingOperations<R>,I:Ideal<R,O>> Clone for QuotientRing<R,O,I> w
 }
 impl<R:Ring<O>,O:RingOperations<R>,I:Ideal<R,O>> PartialEq for QuotientRing<R,O,I> where O::PLUS:O2<I>{
     fn eq(&self, other: &Self) -> bool {
-        I::contains(&self.representative.clone().plus(other.representative.clone().negated()))
+        I::contains(&self.representative.clone().negated().plus(&other.representative))
     }
 }
 impl<R:Ring<O>,O:RingOperations<R>,I:Ideal<R,O>> Eq for QuotientRing<R,O,I> where O::PLUS:O2<I>{
@@ -157,10 +157,10 @@ impl<R:Ring<O>,O:RingOperations<R>,I:Ideal<R,O>> RingOperations<QuotientRing<R,O
     type TIMES = QuotientProduct<O::TIMES>;
 }
 impl<R:Ring<O>,O:RingOperations<R>,I:Ideal<R,O>> O2<QuotientRing<R,O,I>> for QuotientSum<O::PLUS> where O::PLUS:O2<I>{
-    const F: fn(QuotientRing<R,O,I>, QuotientRing<R,O,I>) -> QuotientRing<R,O,I> = |a,b| QuotientRing::from(a.representative.plus(b.representative));
+    const F: fn(QuotientRing<R,O,I>, &QuotientRing<R,O,I>) -> QuotientRing<R,O,I> = |a,b| QuotientRing::from(a.representative.plus(&b.representative));
 }
 impl<R:Ring<O>,O:RingOperations<R>,I:Ideal<R,O>> O2<QuotientRing<R,O,I>> for QuotientProduct<O::TIMES> where O::PLUS:O2<I>{
-    const F: fn(QuotientRing<R,O,I>, QuotientRing<R,O,I>) -> QuotientRing<R,O,I> = |a,b| QuotientRing::from(a.representative.times(b.representative));
+    const F: fn(QuotientRing<R,O,I>, &QuotientRing<R,O,I>) -> QuotientRing<R,O,I> = |a,b| QuotientRing::from(a.representative.times(&b.representative));
 }
 impl<R:Ring<O>,O:RingOperations<R>,I:Ideal<R,O>> Monoid<QuotientSum<O::PLUS>> for QuotientRing<R,O,I> where O::PLUS:O2<I>{
     fn identity() -> Self {

@@ -1,4 +1,4 @@
-use crate::{operation::{O2, i64Times, i64Plus}, set::{Set, Subset}};
+use crate::{operation::{O2, Times, Plus}, set::{Set, Subset}};
 
 ///Any implementation must guarantee that:
 /// * the multiplication `Operation` is associative, and
@@ -16,10 +16,10 @@ pub trait Monoid<Operation: O2<Self>>: Set {
         } else {
             Self::identity()
         };
-        let i = self.pow( n / 2);
-        Operation::F(rem, Operation::F(i.clone(), i))
+        let i = self.pow(n / 2);
+        Operation::F(Operation::F(i.clone(), &i), &rem)
     }
-    fn star(self, other: Self) -> Self {
+    fn star(self, other: &Self) -> Self {
         Operation::F(self, other)
     }
 }
@@ -30,18 +30,12 @@ pub trait AbsorbingSubset<M,O:O2<M>>:Subset<M> where M: Monoid<O>{
     //An absorbing subset A of M has the property that am and ma are  in A for all a in A, m in M
     //An example is the zero subset of the multiplicative monoid of any ring
     //implementations must guarantee that the try_from never panics
-    fn times(self, m:M) -> Self {
+    fn times(self, m:&M) -> Self {
         Self::try_from(self.inclusion().star(m))
     }
 }
 
-impl<M1, T1: O2<M1>, M2, T2: O2<M2>> O2<(M1, M2)> for (T1, T2)
-where
-    M1: Monoid<T1>,
-    M2: Monoid<T2>,
-{
-    const F: fn((M1, M2), (M1, M2)) -> (M1, M2) = |(m1, m2), (m3, m4)| (m1.star(m3), m2.star(m4));
-}
+
 
 impl<M1, T1: O2<M1>, M2, T2: O2<M2>> Monoid<(T1, T2)> for (M1, M2)
 where
@@ -53,12 +47,12 @@ where
     }
 }
 
-impl Monoid<i64Plus> for i64 {
+impl Monoid<Plus> for i64 {
     fn identity() -> Self {
         0
     }
 }
-impl Monoid<i64Times> for i64 {
+impl Monoid<Times> for i64 {
     fn identity() -> Self {
         1
     }

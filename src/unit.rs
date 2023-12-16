@@ -8,7 +8,7 @@ pub struct Unit<R:Ring<O>,O:RingOperations<R>> {
     o:PhantomData<O>
 }
 impl<R:Ring<O>,O:RingOperations<R>> O2<Unit<R,O>> for O::TIMES {
-    const F: fn(Unit<R,O>, Unit<R,O>) -> Unit<R,O> = |a,b| Unit { u: a.u.times(b.u), u_inverse: b.u_inverse.times(a.u_inverse), o: PhantomData };
+    const F: fn(Unit<R,O>, &Unit<R,O>) -> Unit<R,O> = |a,b| Unit { u: a.u.times(&b.u), u_inverse: a.u_inverse.times_left(&b.u_inverse), o: PhantomData };
 }
 impl<R:Ring<O>,O:RingOperations<R>> PartialEq for Unit<R,O> {
     fn eq(&self, other: &Self) -> bool {
@@ -43,8 +43,8 @@ pub trait TryInverse<O:RingOperations<Self>>: Ring<O> {
 }
 impl<R:EuclideanRing<O>,O:RingOperations<R>> TryInverse<O> for R {
     fn try_inverse(self)->Option<Self> {
-        let q=R::one().divide(self.clone());
-        if R::one()==q.clone().times(self) {
+        let (q,r)=R::one().divide(&self);
+        if r==R::zero() {
             Some(q)
         } else {
             None

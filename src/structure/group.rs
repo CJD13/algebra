@@ -1,4 +1,4 @@
-use crate::{operation::{O2, i64Plus}, set::Subset};
+use crate::{operation::{O2, Plus}, set::Subset};
 
 use super::monoid::Monoid;
 
@@ -61,7 +61,7 @@ where
     }
 }
 
-impl Group<i64Plus> for i64 {
+impl Group<Plus> for i64 {
     fn inverse(self) -> Self {
         -self
     }

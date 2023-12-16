@@ -1,4 +1,4 @@
-use crate::operation::{O2, i64Times, i64Plus};
+use crate::operation::{O2, Times, Plus};
 
 use super::{group::{Group, Subgroup, AbelianGroup}, monoid::{Monoid, AbsorbingSubset}};
 
@@ -24,11 +24,19 @@ where
     fn negated(self) -> Self {
         <Self as Group<O::PLUS>>::inverse(self)
     }
-    fn plus(self, other: Self) -> Self {
+    fn plus(self, other: &Self) -> Self {
         O::PLUS::F(self, other)
     }
-    fn times(self, other: Self) -> Self {
+    //Override to eliminate the clone
+    fn minus(self, other: &Self) -> Self {
+        O::PLUS::F(self,&other.clone().negated())
+    }
+    fn times(self, other: &Self) -> Self {
         O::TIMES::F(self, other)
+    }
+    //Override to avoid the clone
+    fn times_left(self, other: &Self) -> Self {
+        other.clone().times(&self)
     }
     fn from_integer(n: u64) -> Self {
         Monoid::<O::PLUS>::pow(Self::one(),n)
@@ -75,7 +83,7 @@ where
 
 pub struct i64Ops {}
 impl RingOperations<i64> for i64Ops {
-    type PLUS = i64Plus;
-    type TIMES = i64Times;
+    type PLUS = Plus;
+    type TIMES = Times;
 }
 impl Ring<i64Ops> for i64 {}
