@@ -31,7 +31,6 @@ where
     T: Set,
 {
 }
-impl Set for i64 {}
 
 /*impl<S,T> FiniteSubset<T> for S where T:FiniteSet, S:Subset<T> {
     const ORDER: usize = T::get_iter().filter(S::contains).collect::<Vec<_>>().len();

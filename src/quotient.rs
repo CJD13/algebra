@@ -2,12 +2,12 @@ use std::marker::PhantomData;
 use std::fmt::Debug;
 
 use crate::{
-    operation::{Plus, O2, Times},
+    operation::{O2},
     set::{Set, Subset},
     structure::{
         group::{Group, NormalSubgroup, Subgroup},
-        monoid::{Monoid, AbsorbingSubset}, ring::{Ideal, RingOperations, Ring, StandardOps},
-    }, wrapper::Wrapper, modular::Multiples,
+        monoid::{Monoid, AbsorbingSubset}, ring::{Ideal, RingOperations, Ring},
+    }, wrapper::Wrapper, modular::Multiples, impls::StandardOps,
 };
 
 #[derive(PartialEq, Eq, Clone)]

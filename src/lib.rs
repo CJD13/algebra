@@ -8,17 +8,19 @@ mod modular;
 mod wrapper;
 mod test;
 mod unit;
+mod impls;
 extern crate take_mut;
+extern crate num_bigint;
 #[cfg(test)]
 mod tests {
     use std::marker::PhantomData;
 
     use crate::{
-        operation::Plus,
         polynomial::Polynomial,
         quotient::{ QuotientGroup, QuotientRing, IntMultiples},
-        structure::{ring::{Ring, StandardOps}, group::Group, monoid::Monoid, euclidean_ring::EuclideanRing},
-        set::{Subset},
+        structure::{ring::{Ring}, group::Group, monoid::Monoid, euclidean_ring::EuclideanRing},
+        set::{Subset}, impls::StandardOps,
+        impls
     };
 
     #[test]

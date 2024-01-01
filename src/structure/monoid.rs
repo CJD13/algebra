@@ -1,4 +1,4 @@
-use crate::{operation::{O2, Times, Plus}, set::{Set, Subset}};
+use crate::{operation::{O2}, set::{Set, Subset}};
 
 ///Any implementation must guarantee that:
 /// * the multiplication `Operation` is associative, and
@@ -44,16 +44,5 @@ where
 {
     fn identity() -> Self {
         (M1::identity(), M2::identity())
-    }
-}
-
-impl Monoid<Plus> for i64 {
-    fn identity() -> Self {
-        0
-    }
-}
-impl Monoid<Times> for i64 {
-    fn identity() -> Self {
-        1
     }
 }

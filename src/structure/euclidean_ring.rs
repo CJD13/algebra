@@ -1,7 +1,7 @@
 
-use crate::{operation::{O2, Times, Plus}, polynomial::Degree, nonzero::NonZero};
+use crate::{operation::{O2}, polynomial::Degree, nonzero::NonZero, impls::StandardOps};
 
-use super::{group::{Group, Subgroup, AbelianGroup}, monoid::{Monoid, AbsorbingSubset}, ring::{Ring, RingOperations, StandardOps}, field::Field};
+use super::{group::{Group, Subgroup, AbelianGroup}, monoid::{Monoid, AbsorbingSubset}, ring::{Ring, RingOperations}, field::Field};
 pub trait EuclideanRing<O:RingOperations<Self>>:Ring<O> {
     //The Euclidean norm of the ring.
     fn norm(&self) -> Degree;

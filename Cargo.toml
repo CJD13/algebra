@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 take_mut = '0.2.2'
+num-bigint = '0.4'

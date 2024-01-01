@@ -1,7 +1,6 @@
-use crate::operation::{O2, Times, Plus};
+use crate::operation::{O2};
 
 use super::{group::{Group, Subgroup, AbelianGroup}, monoid::{Monoid, AbsorbingSubset}};
-
 pub trait RingOperations<T>
 where
     Self::PLUS: O2<T>,
@@ -81,9 +80,3 @@ where
     p:PhantomData<P>
 }*/
 
-pub struct StandardOps {}
-impl RingOperations<i64> for StandardOps {
-    type PLUS = Plus;
-    type TIMES = Times;
-}
-impl Ring<StandardOps> for i64 {}

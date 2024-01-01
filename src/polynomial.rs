@@ -1,5 +1,5 @@
 use std::{marker::PhantomData, ops::{Add, Mul}, cmp::Ordering};
-use crate::{structure::{ring::{RingOperations, Ring, StandardOps, Ideal}, group::{Group, Subgroup}, monoid::{Monoid, AbsorbingSubset}, field::Field, euclidean_ring::EuclideanRing}, set::{Set, Subset}, operation::O2, nonzero::NonZero, unit::TryInverse, wrapper::Wrapper, modular::Multiples, quotient::QuotientRing};
+use crate::{structure::{ring::{RingOperations, Ring, Ideal}, group::{Group, Subgroup}, monoid::{Monoid, AbsorbingSubset}, field::Field, euclidean_ring::EuclideanRing}, set::{Set, Subset}, operation::O2, nonzero::NonZero, unit::TryInverse, wrapper::Wrapper, modular::Multiples, quotient::QuotientRing, impls::StandardOps};
 use take_mut::take;
 pub struct Polynomial<R, O: RingOperations<R>>
 where
