@@ -1,7 +1,6 @@
 use std::ops::{Mul, Add, Neg};
 
 use num_bigint::BigInt;
-use num_rational::BigRational;
 use crate::{structure::{ring::{RingOperations, Ring}, monoid::Monoid, group::Group}, operation::O2, set::Set};
 
 
